@@ -58,9 +58,13 @@ El script descarga el ZIP, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y
 
 ## Publicar una versión
 
+**Por qué no corre el release al hacer solo `git push` a `main`:** el workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) está definido con `on.push.tags: ["v*"]`, así que **solo** se ejecuta al **subir un tag** cuyo nombre empiece por `v` (p. ej. `v1.0.1`). Un push de commits a una rama **no** dispara `action-gh-release`.
+
 1. Ajusta `version` en `build.gradle.kts` si hace falta.
-2. Crea y sube un tag: `git tag v1.0.1 && git push origin v1.0.1`
+2. Crea y sube un tag: `git tag v1.0.1 && git push origin v1.0.1` (si el tag ya existe localmente: `git push origin v1.0.1`).
 3. El workflow **Release** sube `git-bn-cli-*.zip`, `git-bn-cli-*.tgz` y `SHA256SUMS`.
-4. Actualiza la fórmula Homebrew con el nuevo `sha256` del `.tgz`.
+4. Actualiza la fórmula Homebrew con el nuevo `sha256` del `.tgz` (o el valor del asset en la página del release).
+
+**Opcional:** en **Actions → Release → Run workflow** puedes lanzar el mismo job a mano (útil si quieres repetir un build sin mover el tag).
 
 
