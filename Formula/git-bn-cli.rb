@@ -16,7 +16,13 @@ class GitBnCli < Formula
   depends_on "openjdk@21"
 
   def install
-    libexec.install Dir["git-bn-cli-#{version}/*"]
+    # Homebrew deja el cwd en el interior del directorio del .tgz (bin/, lib/) o un nivel arriba.
+    sub = "git-bn-cli-#{version}"
+    if File.directory?(sub)
+      libexec.install Dir["#{sub}/*"]
+    else
+      libexec.install Dir["*"]
+    end
     (bin/"git-bn-cli").write_env_script libexec/"bin/git-bn-cli",
       Language::Java.overridable_java_home_env("21")
   end
