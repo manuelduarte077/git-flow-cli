@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Build distributions
+        run: ./gradlew distZip distTar --no-daemon
+
+      - name: SHA256 checksums
+        run: |
+          cd build/distributions
+          sha256sum git-bn-cli-*.tgz git-bn-cli-*.zip | tee SHA256SUMS
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/distributions/git-bn-cli-*.tgz
+            build/distributions/git-bn-cli-*.zip
+            build/distributions/SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
