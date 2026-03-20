@@ -1,12 +1,9 @@
-# Homebrew formula (tap local o repo).
+# Homebrew formula (ubicación requerida por Homebrew 5: Formula/ en un tap).
 # Tras publicar un release en GitHub, sustituye sha256 por el valor de:
 #   shasum -a 256 git-bn-cli-1.0.1.tgz
 #
-# Instalación desde este repo:
-#   brew install --formula ./packaging/homebrew/git-bn-cli.rb
-#
-# Tap (reemplaza OWNER/REPO):
-#   brew tap OWNER/repo https://github.com/OWNER/homebrew-repo
+# Instalación desde GitHub (recomendado, Homebrew 5+):
+#   brew tap manuelduarte077/git-flow-cli https://github.com/manuelduarte077/git-flow-cli
 #   brew install git-bn-cli
 
 class GitBnCli < Formula

@@ -4,51 +4,70 @@ CLI en Kotlin para crear ramas y commits con la convención de tu flujo (Clikt +
 
 Comando instalado: **`git-bn-cli`**
 
+**Repositorio en GitHub:** [manuelduarte077/git-flow-cli](https://github.com/manuelduarte077/git-flow-cli) — los binarios publicados están en [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
+
 ## Requisitos
 
 - **Java 21+** en el PATH (Temurin, Azul, Homebrew `openjdk@21`, etc.).
 
-## macOS — Homebrew
+---
 
-### Opción A: fórmula desde este repositorio
+## Instalar desde GitHub
 
-```bash
-brew install --formula ./packaging/homebrew/git-bn-cli.rb
-```
+Para Windows puedes usar el script vía `raw.githubusercontent.com`. Para Homebrew en macOS usa `brew tap` (ver abajo).
 
-Antes, si instalas desde un release de GitHub, actualiza en `packaging/homebrew/git-bn-cli.rb`:
+### macOS — Homebrew (fórmula apuntando al release en GitHub)
 
-1. `url` y `version` acordes al release.
-2. `sha256` con el resultado de:
+**Homebrew 5** ya no instala desde `brew install https://raw.githubusercontent.com/.../formula.rb`: interpreta el nombre del `.rb` y busca `git-bn-cli` en los taps (de ahí el aviso *No available formula*). Tampoco acepta `brew install ./ruta/formula.rb` si el archivo no forma parte de un tap.
 
-```bash
-shasum -a 256 git-bn-cli-1.0.1.tgz
-```
-
-(El archivo `.tgz` se genera con `./gradlew distTar` o sale en [Releases](https://github.com/manuelduarte077/git-flow-cli/releases) si usas CI.)
-
-### Opción B: tap propio
-
-Crea un repo `homebrew-tu-tap`, copia `packaging/homebrew/git-bn-cli.rb`, y:
+La fórmula está en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb). Instalación recomendada: **añadir el repo como tap** y luego instalar:
 
 ```bash
-brew tap TU_USUARIO/tu-tap https://github.com/TU_USUARIO/homebrew-tu-tap
+brew tap manuelduarte077/git-flow-cli https://github.com/manuelduarte077/git-flow-cli
 brew install git-bn-cli
 ```
 
-## Windows — PowerShell
+El repositorio debe ser **público** (o el `tap` con URL debe ser accesible con tus credenciales git).
 
-Con un [release](https://github.com/manuelduarte077/git-flow-cli/releases) publicado (misma versión que en el script):
+Si desarrollas en local:
 
-```powershell
-# Desde la raíz del repo clonado:
-powershell -ExecutionPolicy Bypass -File .\packaging\install.ps1
-
-# Otro repo o versión:
-powershell -ExecutionPolicy Bypass -File .\packaging\install.ps1 -Version 1.0.1 -Repo "owner/repo"
+```bash
+brew tap manuelduarte077/git-flow-cli /ruta/al/clon/git-flow-cli
+brew install git-bn-cli
 ```
 
-El script descarga el ZIP, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y añade `bin` al PATH del usuario. Necesitas **JDK 21+** instalado y en el PATH.
+La fórmula usa `url` y `sha256` del artefacto `git-bn-cli-<versión>.tgz` publicado en Releases. Si falla la comprobación de integridad, actualiza el `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb).
+
+### Windows — PowerShell (script desde GitHub)
+
+Descarga el script de instalación desde la rama `main` y ejecútalo (elige la misma **versión** que el [release](https://github.com/manuelduarte077/git-flow-cli) que quieras, por defecto `1.0.1`):
+
+```powershell
+$script = "$env:TEMP\install-git-bn-cli.ps1"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/manuelduarte077/git-flow-cli/main/packaging/install.ps1" -OutFile $script -UseBasicParsing
+powershell -ExecutionPolicy Bypass -File $script -Version 1.0.1
+```
+
+Otra versión u otro fork:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File $script -Version 1.0.1 -Repo "owner/repo"
+```
+
+El script descarga el **ZIP** del release en GitHub, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y añade `bin` al PATH del usuario.
+
+### Instalación manual (cualquier SO)
+
+1. Abre [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
+
+2. En la versión deseada, descarga **`git-bn-cli-<versión>.zip`** (Windows) o **`.tgz`** (macOS/Linux).
+
+3. Descomprime y añade la carpeta `git-bn-cli-<versión>/bin` al `PATH` del sistema.
+
+4. Comprueba: `git-bn-cli --help`.
+
+---
+
 
 ## Desarrollo
 
@@ -56,15 +75,12 @@ El script descarga el ZIP, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y
 ./gradlew run --args="--help"
 ```
 
-## Publicar una versión
+## Publicar una versión (mantenedores)
 
-**Por qué no corre el release al hacer solo `git push` a `main`:** el workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) está definido con `on.push.tags: ["v*"]`, así que **solo** se ejecuta al **subir un tag** cuyo nombre empiece por `v` (p. ej. `v1.0.1`). Un push de commits a una rama **no** dispara `action-gh-release`.
+El workflow **Release** solo se dispara al **push de un tag** `v*` (no al merge a `main`). Ver [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 1. Ajusta `version` en `build.gradle.kts` si hace falta.
-2. Crea y sube un tag: `git tag v1.0.1 && git push origin v1.0.1` (si el tag ya existe localmente: `git push origin v1.0.1`).
-3. El workflow **Release** sube `git-bn-cli-*.zip`, `git-bn-cli-*.tgz` y `SHA256SUMS`.
-4. Actualiza la fórmula Homebrew con el nuevo `sha256` del `.tgz` (o el valor del asset en la página del release).
+2. `git tag v1.0.1 && git push origin v1.0.1`
+3. Tras el workflow, actualiza `url`, `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb) si cambia el artefacto.
 
-**Opcional:** en **Actions → Release → Run workflow** puedes lanzar el mismo job a mano (útil si quieres repetir un build sin mover el tag).
-
-
+**Opcional:** **Actions → Release → Run workflow** para repetir el build.
