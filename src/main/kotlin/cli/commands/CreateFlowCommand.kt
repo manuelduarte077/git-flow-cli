@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import dev.donmanuel.cli.core.GitService
 import dev.donmanuel.cli.core.Slugifier
 
-class CreateFlowCommand : CliktCommand() {
+class CreateFlowCommand : CliktCommand(name = "git-bn-cli") {
 
     private val tipo by option(help = "Tipo (feature, bugfix, hotfix, chore)")
         .prompt("Tipo")
@@ -29,7 +29,7 @@ class CreateFlowCommand : CliktCommand() {
         val branch = "$tipo/$modulo/$id-$slug"
 
         val commitType = mapTipoToCommit(tipo)
-        val commitMsg = "canales_digitales|$modulo|NOVACOMP|$commitType $id| $descripcion"
+        val commitMsg = "canales_digitales|$modulo|DONMANUEL|$commitType $id| $descripcion"
 
         echo("🚀 Creando rama: $branch")
 
