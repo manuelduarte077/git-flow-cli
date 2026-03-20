@@ -38,6 +38,8 @@ brew install git-bn-cli
 
 La fórmula usa `url` y `sha256` del artefacto `git-bn-cli-<versión>.tgz` publicado en Releases. Si falla la comprobación de integridad, actualiza el `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb).
 
+Si al ejecutar `git-bn-cli` aparece `UnsupportedClassVersionError`, suele ser un `JAVA_HOME` apuntando a Java distinto de 21. Prueba `unset JAVA_HOME` o alinea `JAVA_HOME` con `$(/usr/libexec/java_home -v 21)` (o la ruta de `brew --prefix openjdk@21`).
+
 ### Windows — PowerShell (script desde GitHub)
 
 Descarga el script de instalación desde la rama `main` y ejecútalo (elige la misma **versión** que el [release](https://github.com/manuelduarte077/git-flow-cli) que quieras, por defecto `1.0.1`):
