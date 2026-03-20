@@ -1,6 +1,6 @@
 # Homebrew formula (tap local o repo).
 # Tras publicar un release en GitHub, sustituye sha256 por el valor de:
-#   shasum -a 256 git-bn-cli-1.0.0.tgz
+#   shasum -a 256 git-bn-cli-1.0.1.tgz
 #
 # Instalación desde este repo:
 #   brew install --formula ./packaging/homebrew/git-bn-cli.rb
@@ -12,7 +12,7 @@
 class GitBnCli < Formula
   desc "CLI para crear ramas y commits con convención GitBN"
   homepage "https://github.com/manuelduarte077/git-flow-cli"
-  url "https://github.com/manuelduarte077/git-flow-cli/releases/download/v1.0.0/git-bn-cli-1.0.0.tgz"
+  url "https://github.com/manuelduarte077/git-flow-cli/releases/download/v1.0.1/git-bn-cli-1.0.1.tgz"
   sha256 "REPLACE_WITH_SHASUM_OF_TGZ"
   license "MIT"
 

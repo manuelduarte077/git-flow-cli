@@ -22,7 +22,7 @@ Antes, si instalas desde un release de GitHub, actualiza en `packaging/homebrew/
 2. `sha256` con el resultado de:
 
 ```bash
-shasum -a 256 git-bn-cli-1.0.0.tgz
+shasum -a 256 git-bn-cli-1.0.1.tgz
 ```
 
 (El archivo `.tgz` se genera con `./gradlew distTar` o sale en [Releases](https://github.com/manuelduarte077/git-flow-cli/releases) si usas CI.)
@@ -45,7 +45,7 @@ Con un [release](https://github.com/manuelduarte077/git-flow-cli/releases) publi
 powershell -ExecutionPolicy Bypass -File .\packaging\install.ps1
 
 # Otro repo o versión:
-powershell -ExecutionPolicy Bypass -File .\packaging\install.ps1 -Version 1.0.0 -Repo "owner/repo"
+powershell -ExecutionPolicy Bypass -File .\packaging\install.ps1 -Version 1.0.1 -Repo "owner/repo"
 ```
 
 El script descarga el ZIP, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y añade `bin` al PATH del usuario. Necesitas **JDK 21+** instalado y en el PATH.
@@ -59,7 +59,7 @@ El script descarga el ZIP, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y
 ## Publicar una versión
 
 1. Ajusta `version` en `build.gradle.kts` si hace falta.
-2. Crea y sube un tag: `git tag v1.0.0 && git push origin v1.0.0`
+2. Crea y sube un tag: `git tag v1.0.1 && git push origin v1.0.1`
 3. El workflow **Release** sube `git-bn-cli-*.zip`, `git-bn-cli-*.tgz` y `SHA256SUMS`.
 4. Actualiza la fórmula Homebrew con el nuevo `sha256` del `.tgz`.
 
