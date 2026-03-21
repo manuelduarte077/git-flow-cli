@@ -104,6 +104,15 @@ powershell -ExecutionPolicy Bypass -File $script -Version 2.0.0
 
 Descarga el `.zip` / `.tgz` desde [Releases](https://github.com/manuelduarte077/git-flow-cli/releases), descomprime y añade `git-bn-cli-<versión>/bin` al `PATH`.
 
+## Versión y actualizaciones
+
+| Necesidad | Qué hacer |
+| --- | --- |
+| Ver versión | `git-bn-cli --version` o `git-bn-cli -V`, y/o `git-bn-cli about` |
+| Comprobar si hay release nueva | `git-bn-cli about --check-updates` (requiere red; consulta la API pública de GitHub) |
+| Instalar otra versión | **Homebrew:** `brew update` y `brew upgrade git-bn-cli`, o reinstalar desde el tap con la fórmula que apunte al release deseado; **ZIP:** descarga el asset `git-bn-cli-<versión>.zip` del [release](https://github.com/manuelduarte077/git-flow-cli/releases) que quieras y sustituye el directorio en el `PATH`; **PowerShell:** `install.ps1 -Version x.y.z` (ver sección Windows arriba). |
+| Actualizar | Depende del método: `brew upgrade`, nuevo ZIP/TGZ encima de la instalación anterior manteniendo el `PATH`, o volver a ejecutar `install.ps1` con la versión nueva. |
+
 ## Desarrollo
 
 ```bash
