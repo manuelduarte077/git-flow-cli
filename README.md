@@ -103,7 +103,7 @@ brew update && brew install git-flow-cli
 ```powershell
 $script = "$env:TEMP\install-git-flow-cli.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/manuelduarte077/git-flow-cli/main/packaging/install.ps1" -OutFile $script -UseBasicParsing
-powershell -ExecutionPolicy Bypass -File $script -Version 2.0.0
+powershell -ExecutionPolicy Bypass -File $script -Version 2.0.1
 ```
 
 ### Manual
@@ -133,6 +133,6 @@ Descarga `.zip` o `.tgz` desde [Releases](https://github.com/manuelduarte077/git
 Workflow: `[.github/workflows/release.yml](.github/workflows/release.yml)` (se dispara con tag `v*`).
 
 1. Ajusta `version` en `build.gradle.kts` si aplica.
-2. `git tag v2.0.0 && git push origin v2.0.0`
+2. `git tag v2.0.1 && git push origin v2.0.1`
 3. Tras el release, actualiza `url` y `sha256` en `[Formula/git-flow-cli.rb](Formula/git-flow-cli.rb)` según el `.tgz` publicado (el SHA de CI puede no coincidir con un build local).
 

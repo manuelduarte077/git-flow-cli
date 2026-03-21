@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [string]$Version = "2.0.0",
+  [string]$Version = "2.0.1",
   [string]$Repo = "manuelduarte077/git-flow-cli"
 )
 

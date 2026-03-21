@@ -1,8 +1,8 @@
 class GitFlowCli < Formula
   desc "CLI para crear ramas y commits con convención GitBN"
   homepage "https://github.com/manuelduarte077/git-flow-cli"
-  url "https://github.com/manuelduarte077/git-flow-cli/releases/download/v2.0.0/git-flow-cli-2.0.0.tgz"
-  sha256 "15cc8c2eb5c0f7755b5535f0e72f2fcec7c6d185d7c4ab4628255df9e3f97a4a"
+  url "https://github.com/manuelduarte077/git-flow-cli/releases/download/v2.0.1/git-flow-cli-2.0.1.tgz"
+  sha256 "3fd4d421a634f2207209570bfdfdaf487642393298ac429700aa1e36f4dd9df6"
   license "MIT"
 
   depends_on "openjdk@21"
