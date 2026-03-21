@@ -3,6 +3,7 @@ package dev.donmanuel.cli.commands
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.option
+import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.core.BranchNameBuilder
 import dev.donmanuel.cli.core.GitService
 
@@ -39,13 +40,22 @@ class RamaCommand : CliktCommand(
         if (tipoStr == null || appStr == null || sprintStr == null) {
             echo("Modo interactivo. Pulsa Enter tras cada valor.")
             if (tipoStr == null) {
-                tipoStr = promptNonEmpty("Tipo de rama (feature / hotfix / release): ")
+                tipoStr = promptNonEmptyLine(
+                    "Tipo de rama (feature / hotfix / release): ",
+                    ramaNonInteractiveHint(),
+                )
             }
             if (appStr == null) {
-                appStr = promptNonEmpty("Siglas de aplicación (ej. BNMP): ")
+                appStr = promptNonEmptyLine(
+                    "Siglas de aplicación (ej. BNMP): ",
+                    ramaNonInteractiveHint(),
+                )
             }
             if (sprintStr == null) {
-                sprintStr = promptNonEmpty("Versión sprint (ej. V58-Sprint22.05): ")
+                sprintStr = promptNonEmptyLine(
+                    "Versión sprint (ej. V58-Sprint22.05): ",
+                    ramaNonInteractiveHint(),
+                )
             }
         }
 
@@ -57,9 +67,10 @@ class RamaCommand : CliktCommand(
 
         when (t) {
             BranchNameBuilder.TipoRama.FEATURE, BranchNameBuilder.TipoRama.HOTFIX -> {
-                if (areaStr == null) areaStr = promptNonEmpty("Área (ej. DCSTI): ")
-                if (empresaStr == null) empresaStr = promptNonEmpty("Empresa (ej. BABEL): ")
-                if (huStr == null) huStr = promptNonEmpty("Referencia HU/ticket (ej. HU-116268): ")
+                val h = ramaNonInteractiveHint()
+                if (areaStr == null) areaStr = promptNonEmptyLine("Área (ej. DCSTI): ", h)
+                if (empresaStr == null) empresaStr = promptNonEmptyLine("Empresa (ej. BABEL): ", h)
+                if (huStr == null) huStr = promptNonEmptyLine("Referencia HU/ticket (ej. HU-116268): ", h)
             }
             BranchNameBuilder.TipoRama.RELEASE -> Unit
         }
@@ -85,12 +96,7 @@ class RamaCommand : CliktCommand(
         echo("Listo. Rama actual: $branch")
     }
 
-    private fun promptNonEmpty(label: String): String {
-        while (true) {
-            echo(label)
-            val v = readln().trim()
-            if (v.isNotEmpty()) return v
-            echo("Valor vacío; reintenta.")
-        }
-    }
+    private fun ramaNonInteractiveHint() =
+        "Pasa --tipo, --app, --sprint (y si aplica --area, --empresa, --hu), o ejecuta el binario " +
+            "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
 }

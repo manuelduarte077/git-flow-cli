@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
@@ -33,13 +34,14 @@ class CcCommand : CliktCommand(
 
         var t = ticket
         var d = descripcion
+        val ccHint = ccNonInteractiveHint()
         if (t == null || d == null) {
             echo("Modo interactivo. Pulsa Enter tras cada valor.")
             if (t == null) {
-                t = promptNonEmpty("Ticket (ej. BUG 886814, HU-116268): ")
+                t = promptNonEmptyLine("Ticket (ej. BUG 886814, HU-116268): ", ccHint)
             }
             if (d == null) {
-                d = promptNonEmpty("Descripción del cambio: ")
+                d = promptNonEmptyLine("Descripción del cambio: ", ccHint)
             }
         }
 
@@ -47,9 +49,9 @@ class CcCommand : CliktCommand(
         var sc = subcanal ?: cfg?.subcanal
         var emp = empresa ?: cfg?.empresa
 
-        if (c == null) c = promptNonEmpty("Canal: ")
-        if (sc == null) sc = promptNonEmpty("Subcanal: ")
-        if (emp == null) emp = promptNonEmpty("Empresa: ")
+        if (c == null) c = promptNonEmptyLine("Canal: ", ccHint)
+        if (sc == null) sc = promptNonEmptyLine("Subcanal: ", ccHint)
+        if (emp == null) emp = promptNonEmptyLine("Empresa: ", ccHint)
 
         val line = "$c|$sc|$emp|$t| ${d.trim()}"
 
@@ -86,12 +88,7 @@ class CcCommand : CliktCommand(
         echo("Commit creado.")
     }
 
-    private fun promptNonEmpty(label: String): String {
-        while (true) {
-            echo(label)
-            val v = readln().trim()
-            if (v.isNotEmpty()) return v
-            echo("Valor vacío; reintenta.")
-        }
-    }
+    private fun ccNonInteractiveHint() =
+        "Pasa -t/--ticket y -m/--descripcion (y canal/subcanal/empresa si hace falta), o ejecuta el binario " +
+            "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli cc …"
 }
