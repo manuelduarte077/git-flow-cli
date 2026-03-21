@@ -4,12 +4,13 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.option
 import dev.donmanuel.cli.promptNonEmptyLine
+import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.core.BranchNameBuilder
 import dev.donmanuel.cli.core.GitService
 
 class RamaCommand : CliktCommand(
     name = "rama",
-    help = "Crea y cambia a una rama con el formato BN (feature/hotfix/release). Sin flags, modo interactivo.",
+    help = "Crea y cambia a una rama con el formato BN (feature/hotfix/release). Sin flags, modo interactivo. En feature/hotfix la empresa en el nombre es siempre NOVACOMP.",
 ) {
 
     private val tipo by option("-t", "--tipo", help = "feature, hotfix o release")
@@ -19,8 +20,6 @@ class RamaCommand : CliktCommand(
     private val sprint by option("-s", "--sprint", help = "Versión sprint (ej. V58-Sprint22.05)")
 
     private val area by option("--area", help = "Requerido para feature/hotfix (ej. DCSTI)")
-
-    private val empresa by option("--empresa", help = "Requerido para feature/hotfix (ej. NOVACOMP)")
 
     private val hu by option("--hu", help = "Referencia HU/ticket (ej. HU-116268)")
 
@@ -34,7 +33,6 @@ class RamaCommand : CliktCommand(
         var appStr = app
         var sprintStr = sprint
         var areaStr = area
-        var empresaStr = empresa
         var huStr = hu
 
         if (tipoStr == null || appStr == null || sprintStr == null) {
@@ -69,7 +67,6 @@ class RamaCommand : CliktCommand(
             BranchNameBuilder.TipoRama.FEATURE, BranchNameBuilder.TipoRama.HOTFIX -> {
                 val h = ramaNonInteractiveHint()
                 if (areaStr == null) areaStr = promptNonEmptyLine("Área (ej. DCSTI): ", h)
-                if (empresaStr == null) empresaStr = promptNonEmptyLine("Empresa (ej. NOVACOMP): ", h)
                 if (huStr == null) huStr = promptNonEmptyLine("Referencia HU/ticket (ej. HU-116268): ", h)
             }
             BranchNameBuilder.TipoRama.RELEASE -> Unit
@@ -81,7 +78,10 @@ class RamaCommand : CliktCommand(
                 siglasApp = appStr!!,
                 versionSprint = sprintStr!!,
                 area = areaStr,
-                empresa = empresaStr,
+                empresa = when (t) {
+                    BranchNameBuilder.TipoRama.RELEASE -> null
+                    BranchNameBuilder.TipoRama.FEATURE, BranchNameBuilder.TipoRama.HOTFIX -> BnDefaults.EMPRESA
+                },
                 refHu = huStr,
             )
         } catch (e: IllegalArgumentException) {
@@ -97,6 +97,6 @@ class RamaCommand : CliktCommand(
     }
 
     private fun ramaNonInteractiveHint() =
-        "Pasa --tipo, --app, --sprint (y si aplica --area, --empresa, --hu), o ejecuta el binario " +
+        "Pasa --tipo, --app, --sprint (y si aplica --area, --hu), o ejecuta el binario " +
             "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
 }

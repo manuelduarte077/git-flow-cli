@@ -14,12 +14,10 @@ data class BnConfig(
 
         fun load(path: Path): BnConfig {
             val parse = Toml.parse(path)
-            val canal = parse.getString("canal")
-                ?: error("Falta clave 'canal' en $path")
+            val canal = parse.getString("canal") ?: BnDefaults.CANAL_COMMIT
             val subcanal = parse.getString("subcanal")
                 ?: error("Falta clave 'subcanal' en $path")
-            val empresa = parse.getString("empresa")
-                ?: error("Falta clave 'empresa' en $path")
+            val empresa = parse.getString("empresa") ?: BnDefaults.EMPRESA
             val siglasApp = parse.getString("siglas_app")
             return BnConfig(
                 canal = canal,

@@ -6,24 +6,21 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.config.BnConfig
+import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
 import dev.donmanuel.cli.core.GitService
 
 class CcCommand : CliktCommand(
     name = "cc",
-    help = "Commit con formato pipe (canal|subcanal|empresa|ticket| descripción); sin flags obligatorios, modo interactivo.",
+    help = "Commit con formato pipe; canal y empresa fijos (canales_digitales, NOVACOMP). Solo subcanal configurable.",
 ) {
 
     private val ticket by option("-t", "--ticket", help = "Ticket (ej. \"BUG 886814\", \"HU-116268\")")
 
     private val descripcion by option("-m", "--descripcion", help = "Texto descriptivo del cambio")
 
-    private val canal by option("--canal", help = "Sobreescribe canal (por defecto desde .git-flow-cli.toml)")
-
-    private val subcanal by option("--subcanal", help = "Sobreescribe subcanal")
-
-    private val empresa by option("--empresa", help = "Sobreescribe empresa")
+    private val subcanal by option("--subcanal", help = "Subcanal (por defecto desde .git-flow-cli.toml)")
 
     private val printOnly by option("--print", "-p", help = "Solo imprime el mensaje; no ejecuta git commit")
         .flag(default = false)
@@ -45,13 +42,15 @@ class CcCommand : CliktCommand(
             }
         }
 
-        var c = canal ?: cfg?.canal
+        val c = BnDefaults.CANAL_COMMIT
+        val emp = BnDefaults.EMPRESA
         var sc = subcanal ?: cfg?.subcanal
-        var emp = empresa ?: cfg?.empresa
-
-        if (c == null) c = promptNonEmptyLine("Canal: ", ccHint)
-        if (sc == null) sc = promptNonEmptyLine("Subcanal: ", ccHint)
-        if (emp == null) emp = promptNonEmptyLine("Empresa: ", ccHint)
+        if (sc == null) {
+            sc = promptNonEmptyLine(
+                "Subcanal (ej. canales_2): ",
+                ccHint,
+            )
+        }
 
         val line = "$c|$sc|$emp|$t| ${d.trim()}"
 
@@ -89,6 +88,6 @@ class CcCommand : CliktCommand(
     }
 
     private fun ccNonInteractiveHint() =
-        "Pasa -t/--ticket y -m/--descripcion (y canal/subcanal/empresa si hace falta), o ejecuta el binario " +
+        "Pasa -t/--ticket y -m/--descripcion (y --subcanal si hace falta), o ejecuta el binario " +
             "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli cc …"
 }
