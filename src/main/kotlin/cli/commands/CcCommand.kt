@@ -21,7 +21,7 @@ class CcCommand : CliktCommand(
     private val descripcion by option("-m", "--descripcion", help = "Texto descriptivo del cambio")
         .required()
 
-    private val canal by option("--canal", help = "Sobreescribe canal (por defecto desde .git-bn-cli.toml)")
+    private val canal by option("--canal", help = "Sobreescribe canal (por defecto desde .git-flow-cli.toml)")
 
     private val subcanal by option("--subcanal", help = "Sobreescribe subcanal")
 
@@ -35,11 +35,11 @@ class CcCommand : CliktCommand(
         val cfg = cfgPath?.let { BnConfig.load(it) }
 
         val c = canal ?: cfg?.canal
-            ?: throw UsageError("Falta 'canal': añade .git-bn-cli.toml en la raíz del repo o usa --canal")
+            ?: throw UsageError("Falta 'canal': añade .git-flow-cli.toml en la raíz del repo (o .git-bn-cli.toml) o usa --canal")
         val sc = subcanal ?: cfg?.subcanal
-            ?: throw UsageError("Falta 'subcanal': añade .git-bn-cli.toml o usa --subcanal")
+            ?: throw UsageError("Falta 'subcanal': añade .git-flow-cli.toml (o .git-bn-cli.toml) o usa --subcanal")
         val emp = empresa ?: cfg?.empresa
-            ?: throw UsageError("Falta 'empresa': añade .git-bn-cli.toml o usa --empresa")
+            ?: throw UsageError("Falta 'empresa': añade .git-flow-cli.toml (o .git-bn-cli.toml) o usa --empresa")
 
         val line = "$c|$sc|$emp|$ticket| ${descripcion.trim()}"
 

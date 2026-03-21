@@ -1,5 +1,5 @@
 package dev.donmanuel.cli
 
-import dev.donmanuel.cli.commands.GitBnCliCommand
+import dev.donmanuel.cli.commands.GitFlowCliCommand
 
-fun main(args: Array<String>) = GitBnCliCommand().main(args)
+fun main(args: Array<String>) = GitFlowCliCommand().main(args)

@@ -1,8 +1,5 @@
 package dev.donmanuel.cli
 
-/**
- * Comparación laxa de etiquetas tipo semver (`v2.0.0`, `2.0.0`).
- */
 object VersionCompare {
 
     fun versionsEqual(tag: String, local: String): Boolean =
