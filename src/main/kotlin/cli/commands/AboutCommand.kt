@@ -20,13 +20,13 @@ class AboutCommand : CliktCommand(
 
     override fun run() {
         val v = CliVersion.current()
-        echo("git-bn-cli $v")
+        echo("git-flow-cli $v")
         echo("Repositorio: ${CliVersion.REPO_URL}")
         echo("Releases: ${CliVersion.REPO_URL}/releases")
 
         if (!checkUpdates) {
             echo("")
-            echo("Para comprobar actualizaciones: git-bn-cli about --check-updates")
+            echo("Para comprobar actualizaciones: git-flow-cli about --check-updates")
             return
         }
 
@@ -40,8 +40,10 @@ class AboutCommand : CliktCommand(
         when {
             VersionCompare.isRemoteNewer(latest, v) ->
                 echo("Hay una versión más nueva. Descárgala en ${CliVersion.REPO_URL}/releases")
+
             VersionCompare.versionsEqual(latest, v) ->
                 echo("Estás en la última release publicada.")
+
             else ->
                 echo("Tu versión ($v) es más reciente que la última release listada ($latest), o el formato no coincide.")
         }
@@ -53,7 +55,7 @@ class AboutCommand : CliktCommand(
         conn.connectTimeout = 8_000
         conn.readTimeout = 8_000
         conn.setRequestProperty("Accept", "application/vnd.github+json")
-        conn.setRequestProperty("User-Agent", "git-bn-cli")
+        conn.setRequestProperty("User-Agent", "git-flow-cli")
         return try {
             if (conn.responseCode != HttpURLConnection.HTTP_OK) {
                 return null
