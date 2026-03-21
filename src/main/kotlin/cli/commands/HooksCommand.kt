@@ -42,6 +42,10 @@ class HooksInstallCommand : CliktCommand(
               echo "git-flow-cli: ejecutable no encontrado en PATH" >&2
               exit 1
             fi
+            if [ -z "${'$'}1" ]; then
+              echo "git-flow-cli: commit-msg sin ruta de archivo de mensaje" >&2
+              exit 1
+            fi
             exec git-flow-cli hooks verify --file "${'$'}1"
             """.trimIndent() + "\n"
         hookPath.writeText(script)
@@ -60,7 +64,19 @@ class HooksVerifyCommand : CliktCommand(
     private val file by option("--file", "-f", help = "Ruta al archivo con el mensaje").required()
 
     override fun run() {
-        val text = Files.readString(Path(file))
+        if (file.isBlank()) {
+            throw UsageError("Falta la ruta al archivo de mensaje (--file).")
+        }
+        val path = Path(file).toAbsolutePath().normalize()
+        when {
+            !Files.exists(path) ->
+                throw UsageError("No existe el archivo: ${path.absolutePathString()}")
+            Files.isDirectory(path) ->
+                throw UsageError("La ruta es un directorio; se esperaba un archivo de mensaje: ${path.absolutePathString()}")
+            !Files.isRegularFile(path) ->
+                throw UsageError("No es un archivo regular: ${path.absolutePathString()}")
+        }
+        val text = Files.readString(path)
         val firstLine = text.lineSequence()
             .map { it.trim() }
             .firstOrNull { it.isNotEmpty() && !it.startsWith("#") }
