@@ -7,7 +7,7 @@
   %LOCALAPPDATA%\Programs\git-bn-cli\<version> y añade ...\bin al PATH del usuario.
 
 .PARAMETER Version
-  Versión del release (ej. 1.0.1), sin prefijo v.
+  Versión del release (ej. 2.0.0), sin prefijo v.
 
 .PARAMETER Repo
   Repositorio GitHub en formato owner/name.
@@ -16,11 +16,11 @@
   .\packaging\install.ps1
 
 .EXAMPLE
-  .\packaging\install.ps1 -Version 1.0.1 -Repo "manuelduarte077/git-flow-cli"
+  .\packaging\install.ps1 -Version 2.0.0 -Repo "manuelduarte077/git-flow-cli"
 #>
 [CmdletBinding()]
 param(
-  [string]$Version = "1.0.1",
+  [string]$Version = "2.0.0",
   [string]$Repo = "manuelduarte077/git-flow-cli"
 )
 

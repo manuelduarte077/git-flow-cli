@@ -1,0 +1,8 @@
+# Copia este archivo a .git-bn-cli.toml en la raíz de tu repositorio y ajusta valores.
+
+canal = "canales_digitales"
+subcanal = "canales_2"
+empresa = "NOVACOMP"
+
+# Opcional: valor por defecto para documentación (rama usa flags --app, etc.)
+siglas_app = "BNMP"

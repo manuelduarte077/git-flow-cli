@@ -1,88 +1,120 @@
 # git-bn-cli
 
-CLI en Kotlin para crear ramas y commits con la convención de tu flujo (Clikt + Git).
+CLI (Kotlin + Clikt) para **ramas** y **commits** con el formato de trabajo BN / canales digitales.
 
-Comando instalado: **`git-bn-cli`**
+Comando: **`git-bn-cli`**
 
-**Repositorio en GitHub:** [manuelduarte077/git-flow-cli](https://github.com/manuelduarte077/git-flow-cli) — los binarios publicados están en [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
+**Repositorio:** [manuelduarte077/git-flow-cli](https://github.com/manuelduarte077/git-flow-cli) — [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
 
 ## Requisitos
 
-- **Java 21+** en el PATH (Temurin, Azul, Homebrew `openjdk@21`, etc.).
+- **Java 21+** en el PATH.
 
----
+## Uso rápido
+
+### Configuración por proyecto
+
+En la raíz del repositorio git, crea **`.git-bn-cli.toml`** (puedes partir de [`git-bn-cli.example.toml`](git-bn-cli.example.toml)):
+
+```toml
+canal = "canales_digitales"
+subcanal = "canales_2"
+empresa = "NOVACOMP"
+```
+
+### Crear una rama (sin commit)
+
+Formato **release:** `release/<siglas>_<sprint>`  
+Formato **feature / hotfix:** `<tipo>/<siglas>_<sprint>_<area>_<empresa>_<refHU>`
+
+```bash
+# Release
+git-bn-cli rama --tipo release --app BNMP --sprint V58-Sprint22.05
+
+# Feature
+git-bn-cli rama --tipo feature --app BNMP --sprint V58-Sprint22.05 --area DCSTI --empresa BABEL --hu HU-116268
+```
+
+### Commit con formato pipe
+
+Tras `git add`, el mensaje queda como:
+
+`canal|subcanal|empresa|ticket| descripción`
+
+```bash
+git-bn-cli cc --ticket "BUG 886814" -m "Implementación de validación de dispositivo"
+git-bn-cli cc -t "HU-116268" -m "Descripción del cambio"
+```
+
+Solo mostrar el mensaje sin hacer commit: `git-bn-cli cc ... --print`.
+
+Puedes sobreescribir canal/empresa con `--canal`, `--subcanal`, `--empresa` si no hay `.git-bn-cli.toml`.
+
+### Hook `commit-msg` (validación en el repo)
+
+Instala el hook para que **git rechace** commits cuyo mensaje no cumpla el formato pipe:
+
+```bash
+git-bn-cli hooks install
+```
+
+Comprueba un archivo de mensaje (uso interno / pruebas):
+
+```bash
+git-bn-cli hooks verify --file /ruta/al/archivo
+```
+
+Los mensajes que empiezan por `Merge ` se omiten en la validación.
 
 ## Instalar desde GitHub
 
 Para Windows puedes usar el script vía `raw.githubusercontent.com`. Para Homebrew en macOS usa `brew tap` (ver abajo).
 
-### macOS — Homebrew (fórmula apuntando al release en GitHub)
+### macOS — Homebrew
 
-**Homebrew 5** ya no instala desde `brew install https://raw.githubusercontent.com/.../formula.rb`: interpreta el nombre del `.rb` y busca `git-bn-cli` en los taps (de ahí el aviso *No available formula*). Tampoco acepta `brew install ./ruta/formula.rb` si el archivo no forma parte de un tap.
-
-La fórmula está en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb). Instalación recomendada: **añadir el repo como tap** y luego instalar:
+**Homebrew 5** requiere un **tap** con la fórmula en `Formula/`. La fórmula está en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb).
 
 ```bash
 brew tap manuelduarte077/git-flow-cli https://github.com/manuelduarte077/git-flow-cli
 brew install git-bn-cli
 ```
 
-El repositorio debe ser **público** (o el `tap` con URL debe ser accesible con tus credenciales git).
+El repositorio debe ser **público** (o el remoto del tap accesible con tus credenciales).
 
-Si desarrollas en local:
+Desarrollo local:
 
 ```bash
 brew tap manuelduarte077/git-flow-cli /ruta/al/clon/git-flow-cli
 brew install git-bn-cli
 ```
 
-La fórmula usa `url` y `sha256` del artefacto `git-bn-cli-<versión>.tgz` publicado en Releases. Si falla la comprobación de integridad, actualiza el `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb).
+Si aparece `UnsupportedClassVersionError`, revisa `JAVA_HOME` (debe ser Java 21, p. ej. `brew --prefix openjdk@21`).
 
-Si al ejecutar `git-bn-cli` aparece `UnsupportedClassVersionError`, suele ser un `JAVA_HOME` apuntando a Java distinto de 21. Prueba `unset JAVA_HOME` o alinea `JAVA_HOME` con `$(/usr/libexec/java_home -v 21)` (o la ruta de `brew --prefix openjdk@21`).
+### Windows — PowerShell
 
-### Windows — PowerShell (script desde GitHub)
-
-Descarga el script de instalación desde la rama `main` y ejecútalo (elige la misma **versión** que el [release](https://github.com/manuelduarte077/git-flow-cli) que quieras, por defecto `1.0.1`):
+Descarga el script desde `main` y ajusta `-Version` al release que uses:
 
 ```powershell
 $script = "$env:TEMP\install-git-bn-cli.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/manuelduarte077/git-flow-cli/main/packaging/install.ps1" -OutFile $script -UseBasicParsing
-powershell -ExecutionPolicy Bypass -File $script -Version 1.0.1
+powershell -ExecutionPolicy Bypass -File $script -Version 2.0.0
 ```
 
-Otra versión u otro fork:
+### Instalación manual
 
-```powershell
-powershell -ExecutionPolicy Bypass -File $script -Version 1.0.1 -Repo "owner/repo"
-```
-
-El script descarga el **ZIP** del release en GitHub, lo instala en `%LOCALAPPDATA%\Programs\git-bn-cli\` y añade `bin` al PATH del usuario.
-
-### Instalación manual (cualquier SO)
-
-1. Abre [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
-
-2. En la versión deseada, descarga **`git-bn-cli-<versión>.zip`** (Windows) o **`.tgz`** (macOS/Linux).
-
-3. Descomprime y añade la carpeta `git-bn-cli-<versión>/bin` al `PATH` del sistema.
-
-4. Comprueba: `git-bn-cli --help`.
-
----
-
+Descarga el `.zip` / `.tgz` desde [Releases](https://github.com/manuelduarte077/git-flow-cli/releases), descomprime y añade `git-bn-cli-<versión>/bin` al `PATH`.
 
 ## Desarrollo
 
 ```bash
 ./gradlew run --args="--help"
+./gradlew test
 ```
 
 ## Publicar una versión (mantenedores)
 
-El workflow **Release** solo se dispara al **push de un tag** `v*` (no al merge a `main`). Ver [`.github/workflows/release.yml`](.github/workflows/release.yml).
+El workflow **Release** se dispara con **push de tag** `v*`. Ver [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
-1. Ajusta `version` en `build.gradle.kts` si hace falta.
-2. `git tag v1.0.1 && git push origin v1.0.1`
-3. Tras el workflow, actualiza `url`, `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb) si cambia el artefacto.
-
-**Opcional:** **Actions → Release → Run workflow** para repetir el build.
+1. Sube `version` en `build.gradle.kts` si hace falta.
+2. `git tag v2.0.0 && git push origin v2.0.0`
+3. Actualiza `url` / `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb) para el `.tgz` del release.
