@@ -1,3 +1,7 @@
+import org.gradle.api.tasks.bundling.Compression
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.bundling.Tar
+
 plugins {
     kotlin("jvm") version "2.3.10"
     application
@@ -30,6 +34,21 @@ application {
 distributions {
     main {
         distributionBaseName.set("git-bn-cli")
+    }
+}
+
+tasks.withType<Jar>().configureEach {
+    manifest {
+        attributes(
+            "Implementation-Version" to project.version,
+            "Implementation-Title" to "git-bn-cli",
+        )
+    }
+}
+
+tasks.processResources {
+    filesMatching("**/git-bn-cli-version.properties") {
+        filter { line -> line.replace("@version@", project.version.toString()) }
     }
 }
 
