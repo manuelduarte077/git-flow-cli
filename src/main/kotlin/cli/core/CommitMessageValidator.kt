@@ -1,9 +1,5 @@
 package dev.donmanuel.cli.core
 
-/**
- * Valida mensajes de commit con formato pipe:
- * `canal|subcanal|empresa|ticket| descripción`
- */
 object CommitMessageValidator {
 
     fun validate(firstLine: String): ValidationResult {

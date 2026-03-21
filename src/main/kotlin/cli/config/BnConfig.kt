@@ -3,9 +3,6 @@ package dev.donmanuel.cli.config
 import org.tomlj.Toml
 import java.nio.file.Path
 
-/**
- * Configuración por proyecto ([.git-bn-cli.toml] en la raíz del repo).
- */
 data class BnConfig(
     val canal: String,
     val subcanal: String,
@@ -13,7 +10,7 @@ data class BnConfig(
     val siglasApp: String? = null,
 ) {
     companion object {
-        const val FILE_NAME = ".git-bn-cli.toml"
+        const val FILE_NAME = ".git-flow-cli.toml"
 
         fun load(path: Path): BnConfig {
             val parse = Toml.parse(path)

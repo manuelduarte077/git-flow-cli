@@ -38,11 +38,11 @@ class HooksInstallCommand : CliktCommand(
             """
             #!/bin/sh
             set -e
-            if ! command -v git-bn-cli >/dev/null 2>&1; then
-              echo "git-bn-cli: ejecutable no encontrado en PATH" >&2
+            if ! command -v git-flow-cli >/dev/null 2>&1; then
+              echo "git-flow-cli: ejecutable no encontrado en PATH" >&2
               exit 1
             fi
-            exec git-bn-cli hooks verify --file "${'$'}1"
+            exec git-flow-cli hooks verify --file "${'$'}1"
             """.trimIndent() + "\n"
         hookPath.writeText(script)
         val f = hookPath.toFile()
@@ -70,7 +70,7 @@ class HooksVerifyCommand : CliktCommand(
             CommitMessageValidator.ValidationResult.Ok -> exitProcess(0)
             CommitMessageValidator.ValidationResult.Skipped -> exitProcess(0)
             is CommitMessageValidator.ValidationResult.Invalid -> {
-                System.err.println("git-bn-cli: ${v.reason}")
+                System.err.println("git-flow-cli: ${v.reason}")
                 System.err.println("Formato esperado: canal|subcanal|empresa|ticket| descripción")
                 exitProcess(1)
             }
