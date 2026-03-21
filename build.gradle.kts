@@ -28,12 +28,12 @@ kotlin {
 
 application {
     mainClass.set("dev.donmanuel.cli.MainKt")
-    applicationName = "git-bn-cli"
+    applicationName = "git-flow-cli"
 }
 
 distributions {
     main {
-        distributionBaseName.set("git-bn-cli")
+        distributionBaseName.set("git-flow-cli")
     }
 }
 
@@ -41,13 +41,13 @@ tasks.withType<Jar>().configureEach {
     manifest {
         attributes(
             "Implementation-Version" to project.version,
-            "Implementation-Title" to "git-bn-cli",
+            "Implementation-Title" to "git-flow-cli",
         )
     }
 }
 
 tasks.processResources {
-    filesMatching("**/git-bn-cli-version.properties") {
+    filesMatching("**/git-flow-cli-version.properties") {
         filter { line -> line.replace("@version@", project.version.toString()) }
     }
 }

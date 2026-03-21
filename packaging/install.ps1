@@ -1,23 +1,3 @@
-<#
-.SYNOPSIS
-  Instala el binario git-bn-cli (Windows) desde un release de GitHub.
-
-.DESCRIPTION
-  Descarga el ZIP de la distribución Gradle, lo descomprime en
-  %LOCALAPPDATA%\Programs\git-bn-cli\<version> y añade ...\bin al PATH del usuario.
-
-.PARAMETER Version
-  Versión del release (ej. 2.0.0), sin prefijo v.
-
-.PARAMETER Repo
-  Repositorio GitHub en formato owner/name.
-
-.EXAMPLE
-  .\packaging\install.ps1
-
-.EXAMPLE
-  .\packaging\install.ps1 -Version 2.0.0 -Repo "manuelduarte077/git-flow-cli"
-#>
 [CmdletBinding()]
 param(
   [string]$Version = "2.0.0",
@@ -26,10 +6,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$asset = "git-bn-cli-$Version.zip"
+$asset = "git-flow-cli-$Version.zip"
 $url = "https://github.com/$Repo/releases/download/v$Version/$asset"
-$root = Join-Path $env:LOCALAPPDATA "Programs\git-bn-cli"
-$dest = Join-Path $root "git-bn-cli-$Version"
+$root = Join-Path $env:LOCALAPPDATA "Programs\git-flow-cli"
+$dest = Join-Path $root "git-flow-cli-$Version"
 $binDir = Join-Path $dest "bin"
 
 Write-Host "Descargando $url"
@@ -46,8 +26,8 @@ if (Test-Path $dest) {
 Write-Host "Extrayendo en $dest"
 Expand-Archive -Path $tmp -DestinationPath $root -Force
 
-if (-not (Test-Path (Join-Path $binDir "git-bn-cli.bat"))) {
-  throw "No se encontró git-bn-cli.bat en $binDir. Comprueba la versión y el nombre del ZIP en el release."
+if (-not (Test-Path (Join-Path $binDir "git-flow-cli.bat"))) {
+  throw "No se encontró git-flow-cli.bat en $binDir. Comprueba la versión y el nombre del ZIP en el release."
 }
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -61,4 +41,4 @@ if ($userPath -notlike "*$binDir*") {
 }
 
 Write-Host ""
-Write-Host "Instalación lista. Abre una nueva ventana de PowerShell y ejecuta: git-bn-cli --help"
+Write-Host "Instalación lista. Abre una nueva ventana de PowerShell y ejecuta: git-flow-cli --help"

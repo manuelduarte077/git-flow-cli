@@ -1,20 +1,33 @@
-# git-bn-cli
+# git-flow-cli
 
-CLI (Kotlin + Clikt) para **ramas** y **commits** con el formato de trabajo BN / canales digitales.
+CLI (Kotlin + Clikt) para **ramas** y **commits** con formato BN / canales digitales.
 
-Comando: **`git-bn-cli`**
 
-**Repositorio:** [manuelduarte077/git-flow-cli](https://github.com/manuelduarte077/git-flow-cli) — [**Releases**](https://github.com/manuelduarte077/git-flow-cli/releases).
+|          |                                                                                 |
+| -------- | ------------------------------------------------------------------------------- |
+| Comando  | `git-flow-cli`                                                                  |
+| Código   | [manuelduarte077/git-flow-cli](https://github.com/manuelduarte077/git-flow-cli) |
+| Binarios | [Releases](https://github.com/manuelduarte077/git-flow-cli/releases)            |
+
+
+## Contenido
+
+- [Requisitos](#requisitos)
+- [Uso](#uso)
+- [Instalación](#instalación)
+- [Versión y actualizaciones](#versión-y-actualizaciones)
+- [Desarrollo](#desarrollo)
+- [Publicar releases](#publicar-releases-mantenedores)
 
 ## Requisitos
 
-- **Java 21+** en el PATH.
+- **Java 21+** en el `PATH`.
 
-## Uso rápido
+## Uso
 
 ### Configuración por proyecto
 
-En la raíz del repositorio git, crea **`.git-bn-cli.toml`** (puedes partir de [`git-bn-cli.example.toml`](git-bn-cli.example.toml)):
+En la raíz del repo Git, crea `**.git-flow-cli.toml`** (plantilla: `[git-flow-cli.example.toml](git-flow-cli.example.toml)`). También se reconoce `**.git-bn-cli.toml**` (legado).
 
 ```toml
 canal = "canales_digitales"
@@ -22,96 +35,91 @@ subcanal = "canales_2"
 empresa = "NOVACOMP"
 ```
 
-### Crear una rama (sin commit)
+### Ramas (sin commit)
 
-Formato **release:** `release/<siglas>_<sprint>`  
-Formato **feature / hotfix:** `<tipo>/<siglas>_<sprint>_<area>_<empresa>_<refHU>`
 
-```bash
-# Release
-git-bn-cli rama --tipo release --app BNMP --sprint V58-Sprint22.05
+| Tipo             | Formato de nombre                                   |
+| ---------------- | --------------------------------------------------- |
+| Release          | `release/<siglas>_<sprint>`                         |
+| Feature / hotfix | `<tipo>/<siglas>_<sprint>_<area>_<empresa>_<refHU>` |
 
-# Feature
-git-bn-cli rama --tipo feature --app BNMP --sprint V58-Sprint22.05 --area DCSTI --empresa BABEL --hu HU-116268
-```
-
-### Commit con formato pipe
-
-Tras `git add`, el mensaje queda como:
-
-`canal|subcanal|empresa|ticket| descripción`
 
 ```bash
-git-bn-cli cc --ticket "BUG 886814" -m "Implementación de validación de dispositivo"
-git-bn-cli cc -t "HU-116268" -m "Descripción del cambio"
+git-flow-cli rama --tipo release --app BNMP --sprint V58-Sprint22.05
+git-flow-cli rama --tipo feature --app BNMP --sprint V58-Sprint22.05 --area DCSTI --empresa BABEL --hu HU-116268
 ```
 
-Solo mostrar el mensaje sin hacer commit: `git-bn-cli cc ... --print`.
+### Commits con formato pipe
 
-Puedes sobreescribir canal/empresa con `--canal`, `--subcanal`, `--empresa` si no hay `.git-bn-cli.toml`.
-
-### Hook `commit-msg` (validación en el repo)
-
-Instala el hook para que **git rechace** commits cuyo mensaje no cumpla el formato pipe:
+Tras `git add`, el mensaje es: `canal|subcanal|empresa|ticket| descripción`
 
 ```bash
-git-bn-cli hooks install
+git-flow-cli cc --ticket "BUG 886814" -m "Implementación de validación de dispositivo"
+git-flow-cli cc -t "HU-116268" -m "Descripción del cambio"
+git-flow-cli cc ... --print   # solo imprime el mensaje, no hace commit
 ```
 
-Comprueba un archivo de mensaje (uso interno / pruebas):
+Opcionales: `--canal`, `--subcanal`, `--empresa` si no usas el TOML o quieres sobreescribir.
+
+### Hook `commit-msg`
+
+Valida el formato en cada commit (los mensajes que empiezan por `Merge`  se ignoran).
 
 ```bash
-git-bn-cli hooks verify --file /ruta/al/archivo
+git-flow-cli hooks install
+git-flow-cli hooks verify --file /ruta/al/archivo
 ```
 
-Los mensajes que empiezan por `Merge ` se omiten en la validación.
+## Instalación
 
-## Instalar desde GitHub
+### macOS (Homebrew)
 
-Para Windows puedes usar el script vía `raw.githubusercontent.com`. Para Homebrew en macOS usa `brew tap` (ver abajo).
-
-### macOS — Homebrew
-
-**Homebrew 5** requiere un **tap** con la fórmula en `Formula/`. La fórmula está en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb).
+Fórmula: `[Formula/git-flow-cli.rb](Formula/git-flow-cli.rb)` (compatible con Homebrew 5: carpeta `Formula/` en el tap).
 
 ```bash
 brew tap manuelduarte077/git-flow-cli https://github.com/manuelduarte077/git-flow-cli
-brew install git-bn-cli
+brew install git-flow-cli
 ```
 
-El repositorio debe ser **público** (o el remoto del tap accesible con tus credenciales).
-
-Desarrollo local:
+Tap desde un clon local (desarrollo):
 
 ```bash
 brew tap manuelduarte077/git-flow-cli /ruta/al/clon/git-flow-cli
-brew install git-bn-cli
+brew install git-flow-cli
 ```
 
-Si aparece `UnsupportedClassVersionError`, revisa `JAVA_HOME` (debe ser Java 21, p. ej. `brew --prefix openjdk@21`).
+**Migración** desde el binario antiguo `git-bn-cli`:
 
-### Windows — PowerShell
+```bash
+brew uninstall git-bn-cli 2>/dev/null || true
+brew tap manuelduarte077/git-flow-cli https://github.com/manuelduarte077/git-flow-cli
+brew update && brew install git-flow-cli
+```
 
-Descarga el script desde `main` y ajusta `-Version` al release que uses:
+`**UnsupportedClassVersionError`:** revisa `JAVA_HOME` (Java 21, p. ej. `brew --prefix openjdk@21`).
+
+### Windows (PowerShell)
 
 ```powershell
-$script = "$env:TEMP\install-git-bn-cli.ps1"
+$script = "$env:TEMP\install-git-flow-cli.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/manuelduarte077/git-flow-cli/main/packaging/install.ps1" -OutFile $script -UseBasicParsing
 powershell -ExecutionPolicy Bypass -File $script -Version 2.0.0
 ```
 
-### Instalación manual
+### Manual
 
-Descarga el `.zip` / `.tgz` desde [Releases](https://github.com/manuelduarte077/git-flow-cli/releases), descomprime y añade `git-bn-cli-<versión>/bin` al `PATH`.
+Descarga `.zip` o `.tgz` desde [Releases](https://github.com/manuelduarte077/git-flow-cli/releases), descomprime y añade `git-flow-cli-<versión>/bin` al `PATH`.
 
 ## Versión y actualizaciones
 
-| Necesidad | Qué hacer |
-| --- | --- |
-| Ver versión | `git-bn-cli --version` o `git-bn-cli -V`, y/o `git-bn-cli about` |
-| Comprobar si hay release nueva | `git-bn-cli about --check-updates` (requiere red; consulta la API pública de GitHub) |
-| Instalar otra versión | **Homebrew:** `brew update` y `brew upgrade git-bn-cli`, o reinstalar desde el tap con la fórmula que apunte al release deseado; **ZIP:** descarga el asset `git-bn-cli-<versión>.zip` del [release](https://github.com/manuelduarte077/git-flow-cli/releases) que quieras y sustituye el directorio en el `PATH`; **PowerShell:** `install.ps1 -Version x.y.z` (ver sección Windows arriba). |
-| Actualizar | Depende del método: `brew upgrade`, nuevo ZIP/TGZ encima de la instalación anterior manteniendo el `PATH`, o volver a ejecutar `install.ps1` con la versión nueva. |
+
+| Necesidad           | Comando / acción                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Versión instalada   | `git-flow-cli --version`, `-V`, o `git-flow-cli about`                                                                                                                                                       |
+| ¿Hay release nueva? | `git-flow-cli about --check-updates` (requiere red)                                                                                                                                                          |
+| Otra versión        | **Homebrew:** `brew upgrade git-flow-cli`. **ZIP:** asset `git-flow-cli-<versión>.zip` en [Releases](https://github.com/manuelduarte077/git-flow-cli/releases). **PowerShell:** `install.ps1 -Version x.y.z` |
+| Actualizar          | Según método: `brew upgrade`, sustituir carpeta del ZIP en el `PATH`, o volver a ejecutar `install.ps1`                                                                                                      |
+
 
 ## Desarrollo
 
@@ -120,10 +128,11 @@ Descarga el `.zip` / `.tgz` desde [Releases](https://github.com/manuelduarte077/
 ./gradlew test
 ```
 
-## Publicar una versión (mantenedores)
+## Publicar releases (mantenedores)
 
-El workflow **Release** se dispara con **push de tag** `v*`. Ver [`.github/workflows/release.yml`](.github/workflows/release.yml).
+Workflow: `[.github/workflows/release.yml](.github/workflows/release.yml)` (se dispara con tag `v*`).
 
-1. Sube `version` en `build.gradle.kts` si hace falta.
+1. Ajusta `version` en `build.gradle.kts` si aplica.
 2. `git tag v2.0.0 && git push origin v2.0.0`
-3. Actualiza `url` / `sha256` en [`Formula/git-bn-cli.rb`](Formula/git-bn-cli.rb) para el `.tgz` del release.
+3. Tras el release, actualiza `url` y `sha256` en `[Formula/git-flow-cli.rb](Formula/git-flow-cli.rb)` según el `.tgz` publicado (el SHA de CI puede no coincidir con un build local).
+

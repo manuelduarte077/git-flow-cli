@@ -38,7 +38,6 @@ class BranchNameBuilderTest {
 
     @Test
     fun releaseRejectsExtraFields() {
-        // release ignores area/empresa/hu
         assertEquals(
             "release/X_Y",
             BranchNameBuilder.build(

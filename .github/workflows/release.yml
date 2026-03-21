@@ -28,14 +28,14 @@ jobs:
       - name: SHA256 checksums
         run: |
           cd build/distributions
-          sha256sum git-bn-cli-*.tgz git-bn-cli-*.zip | tee SHA256SUMS
+          sha256sum git-flow-cli-*.tgz git-flow-cli-*.zip | tee SHA256SUMS
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2.6.1
         with:
           files: |
-            build/distributions/git-bn-cli-*.tgz
-            build/distributions/git-bn-cli-*.zip
+            build/distributions/git-flow-cli-*.tgz
+            build/distributions/git-flow-cli-*.zip
             build/distributions/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
