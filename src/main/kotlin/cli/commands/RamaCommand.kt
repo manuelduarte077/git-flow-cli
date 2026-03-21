@@ -20,7 +20,7 @@ class RamaCommand : CliktCommand(
 
     private val area by option("--area", help = "Requerido para feature/hotfix (ej. DCSTI)")
 
-    private val empresa by option("--empresa", help = "Requerido para feature/hotfix (ej. BABEL)")
+    private val empresa by option("--empresa", help = "Requerido para feature/hotfix (ej. NOVACOMP)")
 
     private val hu by option("--hu", help = "Referencia HU/ticket (ej. HU-116268)")
 
@@ -69,7 +69,7 @@ class RamaCommand : CliktCommand(
             BranchNameBuilder.TipoRama.FEATURE, BranchNameBuilder.TipoRama.HOTFIX -> {
                 val h = ramaNonInteractiveHint()
                 if (areaStr == null) areaStr = promptNonEmptyLine("Área (ej. DCSTI): ", h)
-                if (empresaStr == null) empresaStr = promptNonEmptyLine("Empresa (ej. BABEL): ", h)
+                if (empresaStr == null) empresaStr = promptNonEmptyLine("Empresa (ej. NOVACOMP): ", h)
                 if (huStr == null) huStr = promptNonEmptyLine("Referencia HU/ticket (ej. HU-116268): ", h)
             }
             BranchNameBuilder.TipoRama.RELEASE -> Unit

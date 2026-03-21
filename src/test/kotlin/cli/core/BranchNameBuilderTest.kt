@@ -24,13 +24,13 @@ class BranchNameBuilderTest {
     @Test
     fun feature() {
         assertEquals(
-            "feature/BNMP_V58-Sprint22.05_DCSTI_BABEL_HU-116268",
+            "feature/BNMP_V58-Sprint22.05_DCSTI_NOVACOMP_HU-116268",
             BranchNameBuilder.build(
                 BranchNameBuilder.TipoRama.FEATURE,
                 "BNMP",
                 "V58-Sprint22.05",
                 "DCSTI",
-                "BABEL",
+                "NOVACOMP",
                 "HU-116268",
             ),
         )
