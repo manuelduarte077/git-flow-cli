@@ -40,6 +40,15 @@ class GitService {
         return p.waitFor() == 1
     }
 
+    /** Rama actual (`git rev-parse --abbrev-ref HEAD`), o null si falla. */
+    fun currentBranchName(): String? {
+        val p = ProcessBuilder("git", "rev-parse", "--abbrev-ref", "HEAD")
+            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .start()
+        val out = p.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }.trim()
+        return if (p.waitFor() == 0 && out.isNotEmpty()) out else null
+    }
+
     private fun runInheritIo(vararg command: String) {
         val process = ProcessBuilder(*command)
             .inheritIO()

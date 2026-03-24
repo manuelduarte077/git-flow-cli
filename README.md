@@ -11,8 +11,10 @@ CLI (Kotlin + Clikt) para **ramas** y **commits** con formato BN / canales digit
 | Acción | Comando |
 | ------ | ------- |
 | Crear rama BN | `git-flow-cli rama …` |
+| Validar nombre de rama (BN) | `git-flow-cli rama verify` · `git-flow-cli rama verify --name hotfix/...` |
 | Commit con formato pipe | `git-flow-cli cc -t TICKET -m "descripción"` |
 | Instalar hook `commit-msg` | `git-flow-cli hooks install` |
+| Validar rama al hacer checkout | `git-flow-cli hooks install --branch-hook` |
 | Ayuda | `git-flow-cli --help` · `git-flow-cli rama --help` |
 
 ## Uso
@@ -46,6 +48,21 @@ git-flow-cli rama --tipo feature --app BNMP --sprint V58-Sprint22.05 --area DCST
 
 Sin flags (o faltando `--tipo`, `--app` o `--sprint`), **`rama` entra en modo interactivo**: pregunta por consola y muestra cómo quedará el nombre de la rama antes de crearla.
 
+Si creas la rama **a mano** con `git checkout -b …`, comprueba el nombre con:
+
+```bash
+git-flow-cli rama verify              # rama actual
+git-flow-cli rama verify --name hotfix/BNMP_V58-Sprint22.05_DCSTI_NOVACOMP_HU-116268
+```
+
+Para validar **automáticamente** tras cada cambio de rama (incluido `checkout -b`), instala el hook opcional:
+
+```bash
+git-flow-cli hooks install --branch-hook
+```
+
+(Se añade `post-checkout`; solo actúa en checkouts de rama, no en cambios de archivos. Ramas como `main` o nombres sin prefijo `feature/`/`hotfix/`/`release/` no se rechazan.)
+
 ### Commits con formato pipe
 
 El mensaje es `canal|subcanal|empresa|ticket| descripción` (por defecto `canales_digitales` y `NOVACOMP` salvo TOML). **Antes del commit** debe haber cambios en staging (`git add`).
@@ -72,6 +89,7 @@ La instalación usa el directorio real de hooks (`git rev-parse --git-path hooks
 git-flow-cli hooks install
 git-flow-cli hooks install --resolve-binary   # ruta absoluta al ejecutable (p. ej. IDE sin git-flow-cli en PATH)
 git-flow-cli hooks install --force              # sobrescribe sin copia de seguridad
+git-flow-cli hooks install --branch-hook        # además: post-checkout para validar nombre BN de rama
 ```
 
 `hooks verify` solo acepta archivos **dentro del directorio Git** del repositorio (p. ej. `.git/COMMIT_EDITMSG`). Uso habitual: lo invoca Git al hacer commit; no hace falta llamarlo a mano salvo pruebas.
@@ -85,10 +103,12 @@ git-flow-cli hooks verify --file .git/COMMIT_EDITMSG
 | Problema | Qué hacer |
 | -------- | --------- |
 | `git-flow-cli: ejecutable no encontrado en PATH` al hacer commit | Asegúrate de que `git-flow-cli` está en el `PATH` del mismo entorno que abre Git (tras instalar, **cierra y vuelve a abrir** la terminal o el IDE). En Windows, abre una terminal nueva tras el instalador PowerShell. Prueba `hooks install --resolve-binary`. |
+| `Could not find or load main class hooks` / `ClassNotFoundException: hoo` | El hook apuntaba a `java` en lugar del script `git-flow-cli` (típico con `--resolve-binary` en versiones antiguas). Actualiza git-flow-cli y vuelve a ejecutar `git-flow-cli hooks install --resolve-binary`, o reinstala sin `--resolve-binary` para usar solo el `PATH`. |
 | El hook no se ejecuta | Comprueba que instalaste en el repo correcto y que `git rev-parse --git-path hooks` apunta al directorio donde está el script. |
 | `cc` dice que no hay cambios en staging | Ejecuta `git add` (o `git add .`) antes de `git-flow-cli cc`. |
 | `hooks verify` rechaza una ruta | Debe ser un archivo bajo el directorio Git del repo (p. ej. no un fichero temporal fuera de `.git`). |
 | Formato de mensaje rechazado | Debe haber exactamente cinco segmentos separados por `\|` y una descripción no vacía: `canal\|subcanal\|empresa\|ticket\| descripción`. |
+| `rama verify` rechaza el nombre tras `git checkout -b` | El nombre debe seguir el formato BN (p. ej. hotfix con 5 segmentos y empresa `NOVACOMP`). Renombra con `git branch -m nuevo-nombre` o usa `git-flow-cli rama` para generar el nombre. |
 
 ## Instalación
 

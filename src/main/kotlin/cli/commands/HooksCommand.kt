@@ -18,7 +18,7 @@ import kotlin.system.exitProcess
 
 class HooksCommand : CliktCommand(
     name = "hooks",
-    help = "Instalar o verificar el hook commit-msg del repositorio.",
+    help = "Instalar o verificar hooks (commit-msg; opcional post-checkout para validar nombres de rama BN).",
 ) {
     init {
         subcommands(HooksInstallCommand(), HooksVerifyCommand())
@@ -39,7 +39,12 @@ class HooksInstallCommand : CliktCommand(
 
     private val resolveBinary by option(
         "--resolve-binary",
-        help = "Escribe en el script la ruta absoluta del ejecutable actual (útil si Git/IDE no tienen git-flow-cli en PATH).",
+        help = "Escribe en el script la ruta absoluta del lanzador bin/git-flow-cli (no la JVM), útil si Git/IDE no tienen git-flow-cli en PATH.",
+    ).flag(default = false)
+
+    private val branchHook by option(
+        "--branch-hook",
+        help = "Instala también post-checkout para validar nombres BN al crear/cambiar de rama (git checkout -b, etc.).",
     ).flag(default = false)
 
     override fun run() {
@@ -69,9 +74,12 @@ class HooksInstallCommand : CliktCommand(
         }
 
         val resolved = if (resolveBinary) {
-            GitRepo.resolveCurrentCliBinary().also {
+            GitRepo.resolveCliLauncherForHook().also {
                 if (it == null) {
-                    echo("Advertencia: no se pudo resolver la ruta del ejecutable; el hook usará git-flow-cli del PATH.")
+                    echo(
+                        "Advertencia: no se pudo resolver el script bin/git-flow-cli (p. ej. sin JAR en ./gradlew run). " +
+                            "El hook usará git-flow-cli del PATH.",
+                    )
                 }
             }
         } else {
@@ -79,19 +87,45 @@ class HooksInstallCommand : CliktCommand(
         }
 
         hookPath.writeText(buildHookShellScript(resolved))
+        setExecutableOrWarn(hookPath)
+
+        if (branchHook) {
+            val pcPath = hooksDir.resolve("post-checkout")
+            if (pcPath.isRegularFile()) {
+                val content = pcPath.readText()
+                val managed = content.contains(GitRepo.HOOK_POST_CHECKOUT_MARKER)
+                if (!managed) {
+                    if (force) {
+                        echo("Sobrescribiendo post-checkout existente (--force).")
+                    } else {
+                        val bak = uniqueBackupPath(pcPath)
+                        Files.move(pcPath, bak, StandardCopyOption.REPLACE_EXISTING)
+                        echo("El post-checkout anterior se guardó en: ${bak.absolutePathString()}")
+                    }
+                }
+            }
+            pcPath.writeText(buildPostCheckoutHookShellScript(resolved))
+            setExecutableOrWarn(pcPath)
+            echo("Hook post-checkout instalado: ${pcPath.absolutePathString()}")
+        }
+
+        echo("Hook commit-msg instalado: ${hookPath.absolutePathString()}")
+    }
+
+    private fun setExecutableOrWarn(hookPath: Path) {
         val f = File(hookPath.toString())
         if (!f.setExecutable(true, false)) {
             echo("Advertencia: no se pudo marcar el hook como ejecutable; ejecuta: chmod +x ${hookPath.absolutePathString()}")
         }
-        echo("Hook instalado: ${hookPath.absolutePathString()}")
     }
 
     private fun uniqueBackupPath(hookPath: Path): Path {
-        val sibling = hookPath.resolveSibling("commit-msg.bak")
+        val bakName = hookPath.fileName.toString() + ".bak"
+        val sibling = hookPath.resolveSibling(bakName)
         return if (!Files.exists(sibling)) {
             sibling
         } else {
-            hookPath.resolveSibling("commit-msg.bak." + System.currentTimeMillis())
+            hookPath.resolveSibling("$bakName.${System.currentTimeMillis()}")
         }
     }
 
@@ -127,6 +161,36 @@ class HooksInstallCommand : CliktCommand(
             appendLine("#!/bin/sh")
             appendLine("# ${GitRepo.HOOK_MANAGED_MARKER}")
             appendLine("set -e")
+            appendLine(body)
+            appendLine()
+        }
+    }
+
+    private fun buildPostCheckoutHookShellScript(resolvedBinary: String?): String {
+        val body = if (resolvedBinary != null) {
+            val q = GitRepo.shellSingleQuoted(resolvedBinary)
+            """
+            CLI_BIN=$q
+            if [ ! -x "${'$'}CLI_BIN" ] && [ ! -f "${'$'}CLI_BIN" ]; then
+              exit 0
+            fi
+            exec "${'$'}CLI_BIN" rama verify -q
+            """.trimIndent()
+        } else {
+            """
+            if ! command -v git-flow-cli >/dev/null 2>&1; then
+              exit 0
+            fi
+            exec git-flow-cli rama verify -q
+            """.trimIndent()
+        }
+        return buildString {
+            appendLine("#!/bin/sh")
+            appendLine("# ${GitRepo.HOOK_POST_CHECKOUT_MARKER}")
+            appendLine("set -e")
+            appendLine("if [ \"${'$'}3\" != 1 ]; then")
+            appendLine("  exit 0")
+            appendLine("fi")
             appendLine(body)
             appendLine()
         }

@@ -2,16 +2,25 @@ package dev.donmanuel.cli.commands
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
+import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.core.BranchNameBuilder
+import dev.donmanuel.cli.core.BranchNameValidator
 import dev.donmanuel.cli.core.GitService
+import kotlin.system.exitProcess
 
 class RamaCommand : CliktCommand(
     name = "rama",
-    help = "Crea y cambia a una rama con el formato BN (feature/hotfix/release). Sin flags, modo interactivo. En feature/hotfix la empresa en el nombre es siempre NOVACOMP.",
+    help = "Crea y cambia a una rama con el formato BN (feature/hotfix/release). Sin flags, modo interactivo. " +
+        "Usa `rama verify` para comprobar el nombre de una rama (p. ej. tras git checkout -b).",
+    invokeWithoutSubcommand = true,
 ) {
+    init {
+        subcommands(RamaVerifyCommand())
+    }
 
     private val tipo by option("-t", "--tipo", help = "feature, hotfix o release")
 
@@ -99,4 +108,46 @@ class RamaCommand : CliktCommand(
     private fun ramaNonInteractiveHint() =
         "Pasa --tipo, --app, --sprint (y si aplica --area, --hu), o ejecuta el binario " +
             "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
+}
+
+class RamaVerifyCommand : CliktCommand(
+    name = "verify",
+    help = "Comprueba que el nombre de la rama cumple el formato BN (rama actual o --name). Código 0 si es válido u omitido.",
+) {
+    private val name by option("--name", "-n", help = "Nombre de rama a validar (por defecto: rama actual)")
+
+    private val quiet by option(
+        "--quiet",
+        "-q",
+        help = "Sin mensaje en salida estándar si es válido u omitido (útil para el hook post-checkout).",
+    ).flag(default = false)
+
+    override fun run() {
+        val gs = GitService()
+        if (!gs.isInsideGitWorkTree()) {
+            throw UsageError("No estás dentro de un repositorio Git.")
+        }
+        val branch = name?.trim()?.takeIf { it.isNotEmpty() }
+            ?: gs.currentBranchName()
+            ?: throw UsageError("No se pudo obtener la rama actual (git rev-parse --abbrev-ref HEAD).")
+        when (val v = BranchNameValidator.validate(branch)) {
+            BranchNameValidator.ValidationResult.Ok -> {
+                if (!quiet) {
+                    echo("Nombre de rama válido (BN): $branch")
+                }
+                exitProcess(0)
+            }
+            BranchNameValidator.ValidationResult.Skipped -> {
+                if (!quiet) {
+                    echo("Validación BN omitida (rama no sujeta a convención o lista permitida): $branch")
+                }
+                exitProcess(0)
+            }
+            is BranchNameValidator.ValidationResult.Invalid -> {
+                System.err.println("git-flow-cli: ${v.reason}")
+                System.err.println("Formato esperado: ${BranchNameValidator.FORMAT_HINT}")
+                exitProcess(1)
+            }
+        }
+    }
 }
