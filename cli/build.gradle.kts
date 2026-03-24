@@ -11,10 +11,6 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-kotlin {
-    jvmToolchain(21)
-}
-
 application {
     mainClass.set("dev.donmanuel.cli.MainKt")
     applicationName = "git-flow-cli"

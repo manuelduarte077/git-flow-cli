@@ -7,10 +7,6 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-kotlin {
-    jvmToolchain(21)
-}
-
 tasks.processResources {
     from(rootProject.layout.projectDirectory.file("git-flow-cli.example.toml"))
     filesMatching("**/git-flow-cli-version.properties") {
