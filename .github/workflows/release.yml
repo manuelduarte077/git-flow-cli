@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  publish:
+  cli-dist:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -21,8 +21,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: gradle
 
-      - name: Build distributions
+      - name: Build CLI distributions
         run: ./gradlew :cli:distZip :cli:distTar --no-daemon
 
       - name: SHA256 checksums
@@ -30,12 +31,75 @@ jobs:
           cd cli/build/distributions
           sha256sum git-flow-cli-*.tgz git-flow-cli-*.zip | tee SHA256SUMS
 
+      - name: Upload CLI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-dist
+          path: |
+            cli/build/distributions/git-flow-cli-*.tgz
+            cli/build/distributions/git-flow-cli-*.zip
+            cli/build/distributions/SHA256SUMS
+
+  desktop-dmg:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Package macOS DMG
+        run: ./gradlew :desktop:packageDmg --no-daemon
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-dmg
+          path: desktop/build/compose/binaries/main/dmg/*.dmg
+
+  desktop-msi:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Package Windows MSI
+        shell: bash
+        run: ./gradlew :desktop:packageMsi --no-daemon
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-msi
+          path: desktop/build/compose/binaries/main/msi/*.msi
+
+  release:
+    needs: [cli-dist, desktop-dmg, desktop-msi]
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
       - name: GitHub Release
         uses: softprops/action-gh-release@v2.6.1
         with:
           files: |
-            cli/build/distributions/git-flow-cli-*.tgz
-            cli/build/distributions/git-flow-cli-*.zip
-            cli/build/distributions/SHA256SUMS
+            release-assets/cli-dist/*
+            release-assets/desktop-dmg/*
+            release-assets/desktop-msi/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
