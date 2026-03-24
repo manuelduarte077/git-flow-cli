@@ -24,8 +24,8 @@ object BranchNameValidator {
         }
         val isBn =
             trimmed.startsWith("feature/") ||
-                trimmed.startsWith("hotfix/") ||
-                trimmed.startsWith("release/")
+                    trimmed.startsWith("hotfix/") ||
+                    trimmed.startsWith("release/")
         if (!isBn) {
             return ValidationResult.Skipped
         }
@@ -52,6 +52,7 @@ object BranchNameValidator {
                 }
                 return ValidationResult.Ok
             }
+
             name.startsWith("feature/") || name.startsWith("hotfix/") -> {
                 val prefix = if (name.startsWith("feature/")) "feature/" else "hotfix/"
                 val rest = name.removePrefix(prefix)
@@ -59,8 +60,8 @@ object BranchNameValidator {
                 if (parts.size < 5) {
                     return ValidationResult.Invalid(
                         "Formato BN: ${prefix}<siglas>_<sprint>_<area>_<empresa>_<refHU>. " +
-                            "Tras el prefijo se encontraron ${parts.size} segmentos (se esperan al menos 5 separados por '_'). " +
-                            "Referencia: $FORMAT_HINT",
+                                "Tras el prefijo se encontraron ${parts.size} segmentos (se esperan al menos 5 separados por '_'). " +
+                                "Referencia: $FORMAT_HINT",
                     )
                 }
                 val app = parts[0].trim()
@@ -78,6 +79,7 @@ object BranchNameValidator {
                 }
                 return ValidationResult.Ok
             }
+
             else -> return ValidationResult.Skipped
         }
     }

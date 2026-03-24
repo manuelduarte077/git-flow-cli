@@ -4,12 +4,12 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
 import dev.donmanuel.cli.core.GitService
+import dev.donmanuel.cli.promptNonEmptyLine
 
 class CcCommand : CliktCommand(
     name = "cc",
@@ -72,8 +72,9 @@ class CcCommand : CliktCommand(
                     }
                 throw UsageError(msg)
             }
-            CommitMessageValidator.ValidationResult.Skipped -> { }
-            CommitMessageValidator.ValidationResult.Ok -> { }
+
+            CommitMessageValidator.ValidationResult.Skipped -> {}
+            CommitMessageValidator.ValidationResult.Ok -> {}
         }
 
         echo("")
@@ -105,5 +106,5 @@ class CcCommand : CliktCommand(
 
     private fun ccNonInteractiveHint() =
         "Pasa -t/--ticket y -m/--descripcion (y --subcanal si hace falta), o ejecuta el binario " +
-            "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli cc …"
+                "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli cc …"
 }

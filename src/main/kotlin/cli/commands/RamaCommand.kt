@@ -5,17 +5,17 @@ import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import dev.donmanuel.cli.promptNonEmptyLine
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.core.BranchNameBuilder
 import dev.donmanuel.cli.core.BranchNameValidator
 import dev.donmanuel.cli.core.GitService
+import dev.donmanuel.cli.promptNonEmptyLine
 import kotlin.system.exitProcess
 
 class RamaCommand : CliktCommand(
     name = "rama",
     help = "Crea y cambia a una rama con el formato BN (feature/hotfix/release). Sin flags, modo interactivo. " +
-        "Usa `rama verify` para comprobar el nombre de una rama (p. ej. tras git checkout -b).",
+            "Usa `rama verify` para comprobar el nombre de una rama (p. ej. tras git checkout -b).",
     invokeWithoutSubcommand = true,
 ) {
     init {
@@ -78,6 +78,7 @@ class RamaCommand : CliktCommand(
                 if (areaStr == null) areaStr = promptNonEmptyLine("Área (ej. DCSTI): ", h)
                 if (huStr == null) huStr = promptNonEmptyLine("Referencia HU/ticket (ej. HU-116268): ", h)
             }
+
             BranchNameBuilder.TipoRama.RELEASE -> Unit
         }
 
@@ -107,7 +108,7 @@ class RamaCommand : CliktCommand(
 
     private fun ramaNonInteractiveHint() =
         "Pasa --tipo, --app, --sprint (y si aplica --area, --hu), o ejecuta el binario " +
-            "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
+                "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
 }
 
 class RamaVerifyCommand : CliktCommand(
@@ -137,12 +138,14 @@ class RamaVerifyCommand : CliktCommand(
                 }
                 exitProcess(0)
             }
+
             BranchNameValidator.ValidationResult.Skipped -> {
                 if (!quiet) {
                     echo("Validación BN omitida (rama no sujeta a convención o lista permitida): $branch")
                 }
                 exitProcess(0)
             }
+
             is BranchNameValidator.ValidationResult.Invalid -> {
                 System.err.println("git-flow-cli: ${v.reason}")
                 System.err.println("Formato esperado: ${BranchNameValidator.FORMAT_HINT}")

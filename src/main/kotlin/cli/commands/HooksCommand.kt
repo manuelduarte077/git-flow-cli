@@ -78,7 +78,7 @@ class HooksInstallCommand : CliktCommand(
                 if (it == null) {
                     echo(
                         "Advertencia: no se pudo resolver el script bin/git-flow-cli (p. ej. sin JAR en ./gradlew run). " +
-                            "El hook usará git-flow-cli del PATH.",
+                                "El hook usará git-flow-cli del PATH.",
                     )
                 }
             }

@@ -25,6 +25,7 @@ object BranchNameBuilder {
             TipoRama.RELEASE -> {
                 "release/${app}_${sprint}"
             }
+
             TipoRama.FEATURE, TipoRama.HOTFIX -> {
                 val a = area?.trim().orEmpty()
                 val e = empresa?.trim().orEmpty()

@@ -17,7 +17,7 @@ object CommitMessageValidator {
         if (parts.size != 5) {
             return ValidationResult.Invalid(
                 "Se esperan exactamente 5 segmentos separados por '|'. Encontrados: ${parts.size}. " +
-                    "Formato: $FORMAT_EXPECTED_HINT",
+                        "Formato: $FORMAT_EXPECTED_HINT",
             )
         }
         val trimmed = parts.map { it.trim() }
