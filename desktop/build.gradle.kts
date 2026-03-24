@@ -37,11 +37,15 @@ compose.desktop {
     application {
         mainClass = "dev.donmanuel.desktop.MainKt"
         nativeDistributions {
-            packageName = "git-flow-cli-desktop"
-            description = "git-flow-cli — formularios rama y commit (complemento al CLI)"
+            packageName = "Git BN Flow"
+            description = "Git BN Flow — formularios rama y commits (complemento al CLI)"
             copyright = "See project license"
             vendor = "donmanuel"
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            macOS {
+                bundleID = "dev.donmanuel.gitbnflow.desktop"
+                iconFile.set(project.file("icons/AppIcon.icns"))
+            }
         }
     }
 }
