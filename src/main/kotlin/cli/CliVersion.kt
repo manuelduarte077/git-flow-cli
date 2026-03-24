@@ -3,7 +3,7 @@ package dev.donmanuel.cli
 import java.io.File
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.Properties
 import java.util.jar.Attributes
 import java.util.jar.JarFile
 
@@ -18,18 +18,7 @@ object CliVersion {
     }
 
     /** JAR que contiene esta clase (instalación empacada); null en `./gradlew run` u otros modos sin JAR. */
-    fun mainJarFileOrNull(): File? {
-        val url = CliVersion::class.java.getResource(
-            CliVersion::class.java.name.replace('.', '/') + ".class",
-        ) ?: return null
-        if (url.protocol != "jar") return null
-        val path = url.path
-        val separator = path.indexOf("!/")
-        if (separator < 0) return null
-        val jarPath = path.substring(0, separator)
-        val filePath = URLDecoder.decode(jarPath.removePrefix("file:"), StandardCharsets.UTF_8)
-        return File(filePath).takeIf { it.isFile }
-    }
+    fun mainJarFileOrNull(): File? = codeSourceJarFile()
 
     private fun readFromResource(): String? {
         val stream = CliVersion::class.java.getResourceAsStream("/git-flow-cli-version.properties")
@@ -42,21 +31,22 @@ object CliVersion {
         val pkg = CliVersion::class.java.`package`
         pkg?.implementationVersion?.takeIf { it.isNotEmpty() }?.let { return it }
 
+        val jarFile = codeSourceJarFile() ?: return null
+        return JarFile(jarFile).use { jar ->
+            jar.manifest?.mainAttributes?.getValue(Attributes.Name.IMPLEMENTATION_VERSION.toString())
+        }
+    }
+
+    private fun codeSourceJarFile(): File? {
         val url = CliVersion::class.java.getResource(
             CliVersion::class.java.name.replace('.', '/') + ".class",
         ) ?: return null
-
         if (url.protocol != "jar") return null
-
         val path = url.path
         val separator = path.indexOf("!/")
         if (separator < 0) return null
-
         val jarPath = path.substring(0, separator)
         val filePath = URLDecoder.decode(jarPath.removePrefix("file:"), StandardCharsets.UTF_8)
-
-        return JarFile(filePath).use { jar ->
-            jar.manifest?.mainAttributes?.getValue(Attributes.Name.IMPLEMENTATION_VERSION.toString())
-        }
+        return File(filePath).takeIf { it.isFile }
     }
 }
