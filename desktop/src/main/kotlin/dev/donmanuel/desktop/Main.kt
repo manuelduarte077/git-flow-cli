@@ -1,10 +1,25 @@
 package dev.donmanuel.desktop
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyShortcut
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.*
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.mohamedrejeb.calf.picker.FilePickerFileType
+import com.mohamedrejeb.calf.picker.FilePickerSelectionMode
+import com.mohamedrejeb.calf.picker.rememberFilePickerLauncher
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.config.ExampleTomlTemplate
@@ -12,97 +27,205 @@ import dev.donmanuel.desktop.components.MainShell
 import dev.donmanuel.desktop.components.PendingTomlDialog
 import dev.donmanuel.desktop.components.ProjectSelectScreen
 import dev.donmanuel.desktop.components.tomlUiStatus
+import dev.donmanuel.desktop.generated.Res
+import dev.donmanuel.desktop.generated.ic_bn
+import dev.donmanuel.desktop.navigation.RouteMain
+import dev.donmanuel.desktop.navigation.RoutePendingToml
+import dev.donmanuel.desktop.navigation.RouteSelection
+import dev.donmanuel.desktop.screens.AboutContent
 import dev.donmanuel.desktop.storage.ProjectHistoryStore
+import dev.donmanuel.desktop.theme.AppSpacing
+import dev.donmanuel.desktop.theme.AppTextButton
 import dev.donmanuel.desktop.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.painterResource
 import java.nio.file.Files
 import java.nio.file.Path
-import javax.swing.JFileChooser
-import javax.swing.SwingUtilities
 import kotlin.io.path.isRegularFile
 
-fun main() = application {
-    val windowState = rememberWindowState(width = 1024.dp, height = 760.dp)
-    Window(
-        onCloseRequest = ::exitApplication,
-        state = windowState,
-        title = "Git BN Flow",
-    ) {
-        AppTheme {
-            DesktopApp()
+private fun configureSkikoOnMacOs() {
+    val os = System.getProperty("os.name").orEmpty().lowercase()
+    if (!os.contains("mac")) return
+    if (System.getProperty("skiko.renderApi") != null) return
+    if (System.getenv("SKIKO_RENDER_API") != null) return
+    System.setProperty("skiko.renderApi", "SOFTWARE")
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+fun main() {
+    configureSkikoOnMacOs()
+    application {
+        val windowState = rememberWindowState(width = 1024.dp, height = 760.dp)
+        val windowIcon = painterResource(Res.drawable.ic_bn)
+        val menuCallbacks = remember { DesktopMenuCallbacks() }
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = windowState,
+            title = "Git BN Flow",
+            icon = windowIcon,
+        ) {
+            MenuBar {
+                Menu("Archivo", mnemonic = 'A') {
+                    Item(
+                        "Abrir proyecto…",
+                        onClick = { menuCallbacks.openProject() },
+                        shortcut = KeyShortcut(Key.O, meta = true),
+                    )
+                    Separator()
+                    Item(
+                        "Salir",
+                        onClick = ::exitApplication,
+                        shortcut = KeyShortcut(Key.Q, meta = true),
+                    )
+                }
+                Menu("Ayuda", mnemonic = 'Y') {
+                    Item(
+                        "Acerca de Git BN Flow",
+                        onClick = { menuCallbacks.showAbout() },
+                    )
+                }
+            }
+            AppTheme {
+                DesktopApp(menuCallbacks = menuCallbacks)
+            }
         }
     }
 }
 
-private sealed class ProjectFlow {
-    data object Selection : ProjectFlow()
-    data class PendingToml(val root: Path) : ProjectFlow()
-    data class Main(val root: Path, val bnConfig: BnConfig?) : ProjectFlow()
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DesktopApp() {
-    var flow by remember { mutableStateOf<ProjectFlow>(ProjectFlow.Selection) }
+fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
+    val navController = rememberNavController()
     var selectionError by remember { mutableStateOf<String?>(null) }
     var recentProjects by remember { mutableStateOf(ProjectHistoryStore.load()) }
+    var aboutOpen by remember { mutableStateOf(false) }
+    var pendingFolderPicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val isOnMain = backStackEntry?.destination?.hasRoute(RouteMain::class) == true
+
+    fun navigateToSelectionClearingStack() {
+        navController.navigate(RouteSelection) {
+            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     fun openGitRoot(gitRoot: Path) {
         scope.launch(Dispatchers.IO) {
             val configPath = gitRoot.resolve(BnConfig.FILE_NAME)
             when {
                 configPath.isRegularFile() -> {
-                    try {
-                        val cfg = BnConfig.load(configPath)
-                        ProjectHistoryStore.add(gitRoot)
-                        withContext(Dispatchers.Main) {
-                            recentProjects = ProjectHistoryStore.load()
-                            flow = ProjectFlow.Main(gitRoot, cfg)
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            selectionError =
-                                "No se pudo leer ${BnConfig.FILE_NAME}: ${e.message ?: e.javaClass.simpleName}"
+                    ProjectHistoryStore.add(gitRoot)
+                    withContext(Dispatchers.Main) {
+                        recentProjects = ProjectHistoryStore.load()
+                        selectionError = null
+                        navController.navigate(RouteMain(gitRoot.toString())) {
+                            popUpTo<RouteSelection> { inclusive = true }
                         }
                     }
                 }
 
                 else -> {
                     withContext(Dispatchers.Main) {
-                        flow = ProjectFlow.PendingToml(gitRoot)
+                        selectionError = null
+                        navController.navigate(RoutePendingToml(gitRoot.toString())) {
+                            popUpTo<RouteSelection> { inclusive = true }
+                        }
                     }
                 }
             }
         }
     }
 
-    when (val f = flow) {
-        is ProjectFlow.Selection -> {
+    val folderPicker = rememberFilePickerLauncher(
+        type = FilePickerFileType.Folder,
+        selectionMode = FilePickerSelectionMode.Single,
+    ) { files ->
+        val path = files.firstOrNull()?.file?.toPath()?.toAbsolutePath()?.normalize()
+            ?: return@rememberFilePickerLauncher
+        selectionError = null
+        scope.launch(Dispatchers.IO) {
+            val gitRoot = ConfigFinder.findGitRoot(path)
+            if (gitRoot == null) {
+                withContext(Dispatchers.Main) {
+                    selectionError = "La carpeta no está dentro de un repositorio Git (.git)."
+                }
+                return@launch
+            }
+            openGitRoot(gitRoot)
+        }
+    }
+
+    SideEffect {
+        menuCallbacks.openProject = {
+            when {
+                isOnMain -> {
+                    navigateToSelectionClearingStack()
+                    pendingFolderPicker = true
+                }
+
+                backStackEntry?.destination?.hasRoute(RoutePendingToml::class) == true -> {
+                    navigateToSelectionClearingStack()
+                    pendingFolderPicker = true
+                }
+
+                else -> {
+                    folderPicker.launch()
+                }
+            }
+        }
+        menuCallbacks.showAbout = { aboutOpen = true }
+    }
+
+    LaunchedEffect(backStackEntry?.destination?.route, pendingFolderPicker) {
+        if (
+            backStackEntry?.destination?.hasRoute(RouteSelection::class) == true &&
+            pendingFolderPicker
+        ) {
+            pendingFolderPicker = false
+            folderPicker.launch()
+        }
+    }
+
+    if (aboutOpen) {
+        Dialog(onDismissRequest = { aboutOpen = false }) {
+            Card(
+                modifier = Modifier.widthIn(max = 520.dp).wrapContentHeight(),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                Column(Modifier.padding(AppSpacing.md)) {
+                    AboutContent()
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        AppTextButton(text = "Cerrar", onClick = { aboutOpen = false })
+                    }
+                }
+            }
+        }
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = RouteSelection,
+    ) {
+        composable<RouteSelection> {
             ProjectSelectScreen(
                 errorMessage = selectionError,
                 onDismissError = { selectionError = null },
                 recentProjects = recentProjects,
                 onChooseFolder = {
                     selectionError = null
-                    scope.launch(Dispatchers.IO) {
-                        val picked = pickDirectoryBlocking()
-                        if (picked == null) return@launch
-                        val gitRoot = ConfigFinder.findGitRoot(picked)
-                        if (gitRoot == null) {
-                            selectionError = "La carpeta no está dentro de un repositorio Git (.git)."
-                            return@launch
-                        }
-                        openGitRoot(gitRoot)
-                    }
+                    folderPicker.launch()
                 },
                 onOpenRecent = { root ->
                     selectionError = null
                     if (!Files.isDirectory(root.resolve(".git"))) {
                         ProjectHistoryStore.remove(root)
                         recentProjects = ProjectHistoryStore.load()
-                        selectionError = "El proyecto ya no existe o no es un repo Git. Se quitó del historial."
+                        selectionError =
+                            "El proyecto ya no existe o no es un repo Git. Se quitó del historial."
                         return@ProjectSelectScreen
                     }
                     openGitRoot(root)
@@ -114,11 +237,15 @@ fun DesktopApp() {
             )
         }
 
-        is ProjectFlow.PendingToml -> {
+        composable<RoutePendingToml> { entry ->
+            val route = entry.toRoute<RoutePendingToml>()
+            val root = Path.of(route.root)
             val goMainWithoutConfig = {
-                ProjectHistoryStore.add(f.root)
+                ProjectHistoryStore.add(root)
                 recentProjects = ProjectHistoryStore.load()
-                flow = ProjectFlow.Main(f.root, null)
+                navController.navigate(RouteMain(route.root)) {
+                    popUpTo<RoutePendingToml> { inclusive = true }
+                }
             }
             PendingTomlDialog(
                 onDismissRequest = goMainWithoutConfig,
@@ -126,17 +253,20 @@ fun DesktopApp() {
                     scope.launch(Dispatchers.IO) {
                         try {
                             val text = ExampleTomlTemplate.loadText()
-                            Files.writeString(f.root.resolve(BnConfig.FILE_NAME), text)
-                            val cfg = BnConfig.load(f.root.resolve(BnConfig.FILE_NAME))
-                            ProjectHistoryStore.add(f.root)
+                            Files.writeString(root.resolve(BnConfig.FILE_NAME), text)
+                            BnConfig.load(root.resolve(BnConfig.FILE_NAME))
+                            ProjectHistoryStore.add(root)
                             withContext(Dispatchers.Main) {
                                 recentProjects = ProjectHistoryStore.load()
-                                flow = ProjectFlow.Main(f.root, cfg)
+                                selectionError = null
+                                navController.navigate(RouteMain(route.root)) {
+                                    popUpTo<RoutePendingToml> { inclusive = true }
+                                }
                             }
                         } catch (e: Exception) {
                             withContext(Dispatchers.Main) {
                                 selectionError = e.message ?: e.javaClass.simpleName
-                                flow = ProjectFlow.Selection
+                                navigateToSelectionClearingStack()
                             }
                         }
                     }
@@ -145,33 +275,46 @@ fun DesktopApp() {
             )
         }
 
-        is ProjectFlow.Main -> {
-            MainShell(
-                projectRoot = f.root,
-                bnConfig = f.bnConfig,
-                tomlStatus = tomlUiStatus(f.root),
-                onChangeProject = {
-                    recentProjects = ProjectHistoryStore.load()
-                    flow = ProjectFlow.Selection
-                },
-            )
-        }
-    }
-}
+        composable<RouteMain> { entry ->
+            val route = entry.toRoute<RouteMain>()
+            val projectRoot = Path.of(route.root)
+            var bnConfig by remember(route.root) { mutableStateOf<BnConfig?>(null) }
+            var loadError by remember(route.root) { mutableStateOf<String?>(null) }
 
-private fun pickDirectoryBlocking(): Path? {
-    val holder = arrayOf<Path?>(null)
-    try {
-        SwingUtilities.invokeAndWait {
-            val fc = JFileChooser()
-            fc.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-            fc.dialogTitle = "Elegir carpeta del repositorio Git"
-            if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                holder[0] = fc.selectedFile.toPath().toAbsolutePath().normalize()
+            LaunchedEffect(route.root) {
+                loadError = null
+                val cfgPath = projectRoot.resolve(BnConfig.FILE_NAME)
+                bnConfig = if (!cfgPath.isRegularFile()) {
+                    null
+                } else {
+                    try {
+                        withContext(Dispatchers.IO) { BnConfig.load(cfgPath) }
+                    } catch (e: Exception) {
+                        loadError = e.message ?: e.javaClass.simpleName
+                        null
+                    }
+                }
+            }
+
+            LaunchedEffect(loadError) {
+                if (loadError != null) {
+                    selectionError = "No se pudo leer ${BnConfig.FILE_NAME}: $loadError"
+                    navigateToSelectionClearingStack()
+                }
+            }
+
+            if (loadError == null) {
+                MainShell(
+                    projectRoot = projectRoot,
+                    bnConfig = bnConfig,
+                    tomlStatus = tomlUiStatus(projectRoot),
+                    onChangeProject = {
+                        recentProjects = ProjectHistoryStore.load()
+                        navigateToSelectionClearingStack()
+                    },
+                    onAboutClick = { aboutOpen = true },
+                )
             }
         }
-    } catch (_: Exception) {
-        return null
     }
-    return holder[0]
 }

@@ -1,10 +1,6 @@
 package dev.donmanuel.desktop.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,13 +9,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.BnDefaults
@@ -152,7 +142,7 @@ fun CcPanel(
 
                         CommitMessageValidator.ValidationResult.Skipped,
                         CommitMessageValidator.ValidationResult.Ok,
-                        -> Unit
+                            -> Unit
                     }
                 },
             )
@@ -172,7 +162,7 @@ fun CcPanel(
 
                                 CommitMessageValidator.ValidationResult.Skipped,
                                 CommitMessageValidator.ValidationResult.Ok,
-                                -> Unit
+                                    -> Unit
                             }
                             withContext(Dispatchers.IO) {
                                 if (!gs.isInsideGitWorkTree()) {
@@ -198,7 +188,13 @@ fun CcPanel(
                 leadingIcon = Icons.Default.EditNote,
             )
         }
-        error?.let { Text("Error: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+        error?.let {
+            Text(
+                "Error: $it",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
         if (preview.isNotEmpty()) {
             Text("Mensaje", style = MaterialTheme.typography.titleSmall)
             Text(preview, style = MaterialTheme.typography.bodyMedium)
