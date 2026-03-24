@@ -45,17 +45,22 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isRegularFile
 
-private fun configureSkikoOnMacOs() {
-    val os = System.getProperty("os.name").orEmpty().lowercase()
+/**
+ * En algunos JDK/macOS, el backend Metal de Skiko falla al enlazar JNI (`UnsatisfiedLinkError` en
+ * `getAdapterMaxTextureSize`). Por defecto usamos render por CPU en macOS salvo override explícito.
+ * Para intentar Metal: `SKIKO_RENDER_API=METAL` o `-Dskiko.renderApi=METAL`.
+ */
+private fun applyDefaultSkikoRenderApiOnMacOs() {
+    val os = System.getProperty("os.name")?.lowercase() ?: return
     if (!os.contains("mac")) return
     if (System.getProperty("skiko.renderApi") != null) return
-    if (System.getenv("SKIKO_RENDER_API") != null) return
+    if (!System.getenv("SKIKO_RENDER_API").isNullOrBlank()) return
     System.setProperty("skiko.renderApi", "SOFTWARE")
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    configureSkikoOnMacOs()
+    applyDefaultSkikoRenderApiOnMacOs()
     application {
         val windowState = rememberWindowState(width = 1024.dp, height = 760.dp)
         val windowIcon = painterResource(Res.drawable.ic_bn)
@@ -104,7 +109,6 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
     var pendingFolderPicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val isOnMain = backStackEntry?.destination?.hasRoute(RouteMain::class) == true
 
     fun navigateToSelectionClearingStack() {
         navController.navigate(RouteSelection) {
@@ -159,25 +163,23 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
         }
     }
 
-    SideEffect {
+    DisposableEffect(navController, backStackEntry?.destination?.route) {
         menuCallbacks.openProject = {
+            val dest = navController.currentBackStackEntry?.destination
             when {
-                isOnMain -> {
+                dest?.hasRoute(RouteMain::class) == true -> {
                     navigateToSelectionClearingStack()
                     pendingFolderPicker = true
                 }
-
-                backStackEntry?.destination?.hasRoute(RoutePendingToml::class) == true -> {
+                dest?.hasRoute(RoutePendingToml::class) == true -> {
                     navigateToSelectionClearingStack()
                     pendingFolderPicker = true
                 }
-
-                else -> {
-                    folderPicker.launch()
-                }
+                else -> folderPicker.launch()
             }
         }
         menuCallbacks.showAbout = { aboutOpen = true }
+        onDispose { }
     }
 
     LaunchedEffect(backStackEntry?.destination?.route, pendingFolderPicker) {
@@ -281,6 +283,7 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
             var bnConfig by remember(route.root) { mutableStateOf<BnConfig?>(null) }
             var loadError by remember(route.root) { mutableStateOf<String?>(null) }
 
+            // Una lectura desde disco por entrada a la pantalla (Navigation evita pasar BnConfig en la ruta).
             LaunchedEffect(route.root) {
                 loadError = null
                 val cfgPath = projectRoot.resolve(BnConfig.FILE_NAME)

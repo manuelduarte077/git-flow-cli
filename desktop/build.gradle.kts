@@ -1,4 +1,3 @@
-import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -22,10 +21,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing")
 }
 
-kotlin {
-    jvmToolchain(21)
-}
-
 compose {
     resources {
         publicResClass = true
@@ -46,12 +41,25 @@ compose.desktop {
                 bundleID = "dev.donmanuel.gitbnflow.desktop"
                 iconFile.set(project.file("icons/AppIcon.icns"))
             }
+            windows {
+                iconFile.set(project.file("icons/AppIcon.ico"))
+            }
         }
     }
 }
 
-if (Runtime.version().feature() >= 24) {
-    tasks.withType<JavaExec>().configureEach {
-        jvmArgs("--enable-native-access=ALL-UNNAMED")
-    }
+tasks.withType<JavaExec>().configureEach {
+    val exec = this
+    jvmArgumentProviders.add(
+        object : CommandLineArgumentProvider {
+            override fun asArguments(): Iterable<String> {
+                val launcher = exec.javaLauncher.orNull ?: return emptyList()
+                return if (launcher.metadata.languageVersion.asInt() >= 24) {
+                    listOf("--enable-native-access=ALL-UNNAMED")
+                } else {
+                    emptyList()
+                }
+            }
+        },
+    )
 }
