@@ -5,8 +5,11 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import dev.donmanuel.cli.CliVersion
 import dev.donmanuel.cli.VersionCompare
-import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse.BodyHandlers
+import java.time.Duration
 
 class AboutCommand : CliktCommand(
     name = "about",
@@ -50,23 +53,24 @@ class AboutCommand : CliktCommand(
     }
 
     private fun fetchLatestReleaseTag(): String? {
-        val url = URL("https://api.github.com/repos/manuelduarte077/git-flow-cli/releases/latest")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.connectTimeout = 8_000
-        conn.readTimeout = 8_000
-        conn.setRequestProperty("Accept", "application/vnd.github+json")
-        conn.setRequestProperty("User-Agent", "git-flow-cli")
+        val client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(8))
+            .build()
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("https://api.github.com/repos/manuelduarte077/git-flow-cli/releases/latest"))
+            .header("Accept", "application/vnd.github+json")
+            .header("User-Agent", "git-flow-cli")
+            .timeout(Duration.ofSeconds(8))
+            .GET()
+            .build()
         return try {
-            if (conn.responseCode != HttpURLConnection.HTTP_OK) {
+            val response = client.send(request, BodyHandlers.ofString())
+            if (response.statusCode() != 200) {
                 return null
             }
-            val text = conn.inputStream.bufferedReader().use { it.readText() }
-            Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(text)?.groupValues?.get(1)
+            Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(response.body())?.groupValues?.get(1)
         } catch (_: Exception) {
             null
-        } finally {
-            conn.disconnect()
         }
     }
-
 }

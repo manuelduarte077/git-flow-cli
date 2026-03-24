@@ -13,12 +13,21 @@ data class BnConfig(
         const val FILE_NAME = ".git-flow-cli.toml"
 
         fun load(path: Path): BnConfig {
-            val parse = Toml.parse(path)
+            val parse = try {
+                Toml.parse(path)
+            } catch (e: Exception) {
+                throw IllegalStateException(
+                    "No se pudo leer el TOML en $path: ${e.message ?: e.javaClass.simpleName}",
+                )
+            }
             val canal = parse.getString("canal") ?: BnDefaults.CANAL_COMMIT
             val subcanal = parse.getString("subcanal")
-                ?: error("Falta clave 'subcanal' en $path")
+                ?: throw IllegalStateException(
+                    "Falta la clave obligatoria 'subcanal' en $path (ej. subcanal = \"canales_2\").",
+                )
             val empresa = parse.getString("empresa") ?: BnDefaults.EMPRESA
             val siglasApp = parse.getString("siglas_app")
+
             return BnConfig(
                 canal = canal,
                 subcanal = subcanal,

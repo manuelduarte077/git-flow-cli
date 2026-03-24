@@ -1,3 +1,5 @@
-# Mínimo obligatorio: subcanal. canal y empresa omitibles (por defecto canales_digitales y NOVACOMP).
+# Mínimo obligatorio: subcanal. canal y empresa son opcionales (por defecto canales_digitales y NOVACOMP).
 
 subcanal = "canales_2"
+# canal = "canales_digitales"
+# empresa = "NOVACOMP"

@@ -7,7 +7,8 @@ import dev.donmanuel.cli.CliVersion
 
 class GitFlowCliCommand : CliktCommand(
     name = "git-flow-cli",
-    help = "Herramientas para ramas y commits con formato BN / canales digitales.",
+    help = "Herramientas para ramas y commits con formato BN / canales digitales. " +
+        "Ejemplos: git-flow-cli rama --help · git-flow-cli cc -t TICKET -m \"descripción\" · git-flow-cli hooks install.",
     invokeWithoutSubcommand = false,
 ) {
     init {

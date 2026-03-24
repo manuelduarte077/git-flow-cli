@@ -13,7 +13,7 @@ import dev.donmanuel.cli.core.GitService
 
 class CcCommand : CliktCommand(
     name = "cc",
-    help = "Commit con formato pipe; canal y empresa fijos (canales_digitales, NOVACOMP). Solo subcanal configurable.",
+    help = "Commit con formato pipe. Por defecto canal y empresa son canales_digitales y NOVACOMP; se pueden sobrescribir en .git-flow-cli.toml.",
 ) {
 
     private val ticket by option("-t", "--ticket", help = "Ticket (ej. \"BUG 886814\", \"HU-116268\")")
@@ -27,7 +27,15 @@ class CcCommand : CliktCommand(
 
     override fun run() {
         val cfgPath = ConfigFinder.findConfigFile()
-        val cfg = cfgPath?.let { BnConfig.load(it) }
+        val cfg = cfgPath?.let { path ->
+            try {
+                BnConfig.load(path)
+            } catch (e: IllegalStateException) {
+                throw UsageError(e.message ?: "Configuración inválida en $path")
+            } catch (e: Exception) {
+                throw UsageError("No se pudo cargar la configuración en $path: ${e.message ?: e.javaClass.simpleName}")
+            }
+        }
 
         var t = ticket
         var d = descripcion
@@ -42,8 +50,8 @@ class CcCommand : CliktCommand(
             }
         }
 
-        val c = BnDefaults.CANAL_COMMIT
-        val emp = BnDefaults.EMPRESA
+        val c = cfg?.canal ?: BnDefaults.CANAL_COMMIT
+        val emp = cfg?.empresa ?: BnDefaults.EMPRESA
         var sc = subcanal ?: cfg?.subcanal
         if (sc == null) {
             sc = promptNonEmptyLine(
@@ -55,7 +63,15 @@ class CcCommand : CliktCommand(
         val line = "$c|$sc|$emp|$t| ${d.trim()}"
 
         when (val v = CommitMessageValidator.validate(line)) {
-            is CommitMessageValidator.ValidationResult.Invalid -> throw UsageError(v.reason)
+            is CommitMessageValidator.ValidationResult.Invalid -> {
+                val msg =
+                    if (v.reason.contains(CommitMessageValidator.FORMAT_EXPECTED_HINT)) {
+                        v.reason
+                    } else {
+                        "${v.reason} Formato: ${CommitMessageValidator.FORMAT_EXPECTED_HINT}"
+                    }
+                throw UsageError(msg)
+            }
             CommitMessageValidator.ValidationResult.Skipped -> { }
             CommitMessageValidator.ValidationResult.Ok -> { }
         }
