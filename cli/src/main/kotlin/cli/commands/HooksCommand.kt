@@ -10,6 +10,7 @@ import dev.donmanuel.cli.CliMessages
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
 import dev.donmanuel.cli.core.GitRepo
+import dev.donmanuel.cli.core.HookMessageFileVerifier
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -206,37 +207,14 @@ class HooksVerifyCommand : CliktCommand(
             throw UsageError("Indica --file.")
         }
         val path = Path.of(file).toAbsolutePath().normalize()
-        when {
-            !Files.exists(path) ->
-                throw UsageError("No existe: ${path.absolutePathString()}")
+        when (val o = HookMessageFileVerifier.verify(path)) {
+            is HookMessageFileVerifier.Outcome.Usage -> throw UsageError(o.message)
+            HookMessageFileVerifier.Outcome.Ok,
+            HookMessageFileVerifier.Outcome.Skipped,
+            -> exitProcess(0)
 
-            Files.isDirectory(path) ->
-                throw UsageError("Es un directorio, no un archivo: ${path.absolutePathString()}")
-
-            !Files.isRegularFile(path) ->
-                throw UsageError("No es un archivo: ${path.absolutePathString()}")
-        }
-
-        val gitRoot = ConfigFinder.findGitRoot(path)
-            ?: throw UsageError(CliMessages.NOT_IN_GIT_REPO)
-        val gitDir = try {
-            GitRepo.gitDirectory(gitRoot).toRealPath()
-        } catch (e: IllegalStateException) {
-            throw UsageError(e.message ?: ".git no disponible.")
-        }
-        val realFile = path.toRealPath()
-        if (!(realFile.startsWith(gitDir))) {
-            throw UsageError(
-                "El archivo debe estar bajo ${gitDir.absolutePathString()} (recibido: ${realFile.absolutePathString()}).",
-            )
-        }
-
-        val text = Files.readString(path)
-        when (val v = CommitMessageValidator.validateMessageText(text)) {
-            CommitMessageValidator.ValidationResult.Ok -> exitProcess(0)
-            CommitMessageValidator.ValidationResult.Skipped -> exitProcess(0)
-            is CommitMessageValidator.ValidationResult.Invalid -> {
-                System.err.println("git-flow-cli: ${v.reason}")
+            is HookMessageFileVerifier.Outcome.Invalid -> {
+                System.err.println("git-flow-cli: ${o.reason}")
                 System.err.println("Formato esperado: ${CommitMessageValidator.FORMAT_EXPECTED_HINT}")
                 exitProcess(1)
             }
