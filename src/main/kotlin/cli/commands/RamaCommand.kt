@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import dev.donmanuel.cli.CliMessages
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.core.BranchNameBuilder
 import dev.donmanuel.cli.core.BranchNameValidator
@@ -35,7 +36,7 @@ class RamaCommand : CliktCommand(
     override fun run() {
         val gs = GitService()
         if (!gs.isInsideGitWorkTree()) {
-            throw UsageError("No estás dentro de un repositorio Git.")
+            throw UsageError(CliMessages.NOT_IN_GIT_REPO)
         }
 
         var tipoStr = tipo
@@ -107,8 +108,7 @@ class RamaCommand : CliktCommand(
     }
 
     private fun ramaNonInteractiveHint() =
-        "Pasa --tipo, --app, --sprint (y si aplica --area, --hu), o ejecuta el binario " +
-                "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli rama …"
+        "Usa --tipo/--app/--sprint (y --area/--hu si aplica), o build/install/.../bin/git-flow-cli rama …"
 }
 
 class RamaVerifyCommand : CliktCommand(
@@ -126,22 +126,22 @@ class RamaVerifyCommand : CliktCommand(
     override fun run() {
         val gs = GitService()
         if (!gs.isInsideGitWorkTree()) {
-            throw UsageError("No estás dentro de un repositorio Git.")
+            throw UsageError(CliMessages.NOT_IN_GIT_REPO)
         }
         val branch = name?.trim()?.takeIf { it.isNotEmpty() }
             ?: gs.currentBranchName()
-            ?: throw UsageError("No se pudo obtener la rama actual (git rev-parse --abbrev-ref HEAD).")
+            ?: throw UsageError("No se obtuvo la rama actual (git rev-parse --abbrev-ref HEAD).")
         when (val v = BranchNameValidator.validate(branch)) {
             BranchNameValidator.ValidationResult.Ok -> {
                 if (!quiet) {
-                    echo("Nombre de rama válido (BN): $branch")
+                    echo("Rama BN válida: $branch")
                 }
                 exitProcess(0)
             }
 
             BranchNameValidator.ValidationResult.Skipped -> {
                 if (!quiet) {
-                    echo("Validación BN omitida (rama no sujeta a convención o lista permitida): $branch")
+                    echo("Sin validación BN: $branch")
                 }
                 exitProcess(0)
             }

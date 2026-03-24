@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import dev.donmanuel.cli.CliMessages
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
 import dev.donmanuel.cli.core.GitRepo
@@ -49,13 +50,13 @@ class HooksInstallCommand : CliktCommand(
 
     override fun run() {
         val root = ConfigFinder.findGitRoot()
-            ?: throw UsageError("No se encontró un repositorio git (directorio .git).")
+            ?: throw UsageError(CliMessages.NOT_IN_GIT_REPO)
         val hooksDir = GitRepo.resolveHooksDirectory(root)
         hooksDir.createDirectories()
 
         val defaultHooks = root.resolve(".git/hooks").normalize()
         if (hooksDir.normalize() != defaultHooks) {
-            echo("Directorio de hooks (git rev-parse --git-path hooks): ${hooksDir.absolutePathString()}")
+            echo("Hooks: ${hooksDir.absolutePathString()}")
         }
 
         val hookPath = hooksDir.resolve("commit-msg")
@@ -64,11 +65,11 @@ class HooksInstallCommand : CliktCommand(
             val managed = content.contains(GitRepo.HOOK_MANAGED_MARKER)
             if (!managed) {
                 if (force) {
-                    echo("Sobrescribiendo commit-msg existente (--force).")
+                    echo("Sobrescribiendo commit-msg (--force).")
                 } else {
                     val bak = uniqueBackupPath(hookPath)
                     Files.move(hookPath, bak, StandardCopyOption.REPLACE_EXISTING)
-                    echo("El commit-msg anterior se guardó en: ${bak.absolutePathString()}")
+                    echo("Respaldo commit-msg: ${bak.absolutePathString()}")
                 }
             }
         }
@@ -76,10 +77,7 @@ class HooksInstallCommand : CliktCommand(
         val resolved = if (resolveBinary) {
             GitRepo.resolveCliLauncherForHook().also {
                 if (it == null) {
-                    echo(
-                        "Advertencia: no se pudo resolver el script bin/git-flow-cli (p. ej. sin JAR en ./gradlew run). " +
-                                "El hook usará git-flow-cli del PATH.",
-                    )
+                    echo("Advertencia: no se encontró bin/git-flow-cli; el hook usará PATH.")
                 }
             }
         } else {
@@ -96,26 +94,26 @@ class HooksInstallCommand : CliktCommand(
                 val managed = content.contains(GitRepo.HOOK_POST_CHECKOUT_MARKER)
                 if (!managed) {
                     if (force) {
-                        echo("Sobrescribiendo post-checkout existente (--force).")
+                        echo("Sobrescribiendo post-checkout (--force).")
                     } else {
                         val bak = uniqueBackupPath(pcPath)
                         Files.move(pcPath, bak, StandardCopyOption.REPLACE_EXISTING)
-                        echo("El post-checkout anterior se guardó en: ${bak.absolutePathString()}")
+                        echo("Respaldo post-checkout: ${bak.absolutePathString()}")
                     }
                 }
             }
             pcPath.writeText(buildPostCheckoutHookShellScript(resolved))
             setExecutableOrWarn(pcPath)
-            echo("Hook post-checkout instalado: ${pcPath.absolutePathString()}")
+            echo("post-checkout: ${pcPath.absolutePathString()}")
         }
 
-        echo("Hook commit-msg instalado: ${hookPath.absolutePathString()}")
+        echo("commit-msg: ${hookPath.absolutePathString()}")
     }
 
     private fun setExecutableOrWarn(hookPath: Path) {
         val f = File(hookPath.toString())
         if (!f.setExecutable(true, false)) {
-            echo("Advertencia: no se pudo marcar el hook como ejecutable; ejecuta: chmod +x ${hookPath.absolutePathString()}")
+            echo("Advertencia: chmod +x ${hookPath.absolutePathString()}")
         }
     }
 
@@ -205,32 +203,31 @@ class HooksVerifyCommand : CliktCommand(
 
     override fun run() {
         if (file.isBlank()) {
-            throw UsageError("Falta la ruta al archivo de mensaje (--file).")
+            throw UsageError("Indica --file.")
         }
         val path = Path.of(file).toAbsolutePath().normalize()
         when {
             !Files.exists(path) ->
-                throw UsageError("No existe el archivo: ${path.absolutePathString()}")
+                throw UsageError("No existe: ${path.absolutePathString()}")
 
             Files.isDirectory(path) ->
-                throw UsageError("La ruta es un directorio; se esperaba un archivo de mensaje: ${path.absolutePathString()}")
+                throw UsageError("Es un directorio, no un archivo: ${path.absolutePathString()}")
 
             !Files.isRegularFile(path) ->
-                throw UsageError("No es un archivo regular: ${path.absolutePathString()}")
+                throw UsageError("No es un archivo: ${path.absolutePathString()}")
         }
 
         val gitRoot = ConfigFinder.findGitRoot(path)
-            ?: throw UsageError("No se encontró un repositorio git que contenga el archivo.")
+            ?: throw UsageError(CliMessages.NOT_IN_GIT_REPO)
         val gitDir = try {
             GitRepo.gitDirectory(gitRoot).toRealPath()
         } catch (e: IllegalStateException) {
-            throw UsageError(e.message ?: "No se pudo determinar el directorio .git.")
+            throw UsageError(e.message ?: ".git no disponible.")
         }
         val realFile = path.toRealPath()
         if (!(realFile.startsWith(gitDir))) {
             throw UsageError(
-                "Solo se validan archivos bajo el directorio Git del repositorio (${gitDir.absolutePathString()}). " +
-                        "Recibido: ${realFile.absolutePathString()}",
+                "El archivo debe estar bajo ${gitDir.absolutePathString()} (recibido: ${realFile.absolutePathString()}).",
             )
         }
 

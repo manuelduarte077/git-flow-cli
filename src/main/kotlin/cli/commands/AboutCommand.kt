@@ -36,7 +36,7 @@ class AboutCommand : CliktCommand(
         echo("")
         val latest = fetchLatestReleaseTag()
         if (latest == null) {
-            echo("No se pudo consultar la última versión en GitHub (sin red o API no disponible).")
+            echo("No se pudo consultar GitHub (red o API).")
             return
         }
         echo("Última release en GitHub: $latest")
@@ -48,7 +48,7 @@ class AboutCommand : CliktCommand(
                 echo("Estás en la última release publicada.")
 
             else ->
-                echo("Tu versión ($v) es más reciente que la última release listada ($latest), o el formato no coincide.")
+                echo("Versión local $v vs release $latest (más nueva local o tag distinto).")
         }
     }
 

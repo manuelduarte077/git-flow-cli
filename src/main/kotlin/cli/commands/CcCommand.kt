@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import dev.donmanuel.cli.CliMessages
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.config.ConfigFinder
@@ -33,7 +34,7 @@ class CcCommand : CliktCommand(
             } catch (e: IllegalStateException) {
                 throw UsageError(e.message ?: "Configuración inválida en $path")
             } catch (e: Exception) {
-                throw UsageError("No se pudo cargar la configuración en $path: ${e.message ?: e.javaClass.simpleName}")
+                throw UsageError("$path: ${e.message ?: e.javaClass.simpleName}")
             }
         }
 
@@ -88,12 +89,10 @@ class CcCommand : CliktCommand(
 
         val gs = GitService()
         if (!gs.isInsideGitWorkTree()) {
-            throw UsageError("No estás dentro de un repositorio Git.")
+            throw UsageError(CliMessages.NOT_IN_GIT_REPO)
         }
         if (!gs.hasStagedChanges()) {
-            throw UsageError(
-                "No hay cambios en staging. Ejecuta git add (o git add .) antes de git-flow-cli cc.",
-            )
+            throw UsageError("Nada en staging. Usa git add antes de cc.")
         }
 
         try {
@@ -105,6 +104,5 @@ class CcCommand : CliktCommand(
     }
 
     private fun ccNonInteractiveHint() =
-        "Pasa -t/--ticket y -m/--descripcion (y --subcanal si hace falta), o ejecuta el binario " +
-                "tras ./gradlew installDist: build/install/git-flow-cli/bin/git-flow-cli cc …"
+        "Usa -t/-m (y --subcanal si aplica), o el binario en build/install/.../bin/git-flow-cli cc …"
 }

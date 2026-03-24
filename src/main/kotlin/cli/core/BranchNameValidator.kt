@@ -17,7 +17,7 @@ object BranchNameValidator {
     fun validate(branchName: String): ValidationResult {
         val trimmed = branchName.trim()
         if (trimmed.isEmpty()) {
-            return ValidationResult.Invalid("El nombre de rama está vacío.")
+            return ValidationResult.Invalid("Nombre de rama vacío.")
         }
         if (trimmed.lowercase() in ALLOWLIST) {
             return ValidationResult.Skipped
@@ -37,18 +37,16 @@ object BranchNameValidator {
             name.startsWith("release/") -> {
                 val rest = name.removePrefix("release/")
                 if (rest.isEmpty()) {
-                    return ValidationResult.Invalid("Tras release/ falta <siglas>_<sprint>.")
+                    return ValidationResult.Invalid("release/: falta <siglas>_<sprint>.")
                 }
                 val idx = rest.indexOf('_')
                 if (idx <= 0) {
-                    return ValidationResult.Invalid(
-                        "Formato release: release/<siglas>_<sprint> (falta '_' entre siglas y sprint).",
-                    )
+                    return ValidationResult.Invalid("release/: falta '_' entre siglas y sprint.")
                 }
                 val app = rest.substring(0, idx).trim()
                 val sprint = rest.substring(idx + 1).trim()
                 if (app.isEmpty() || sprint.isEmpty()) {
-                    return ValidationResult.Invalid("Siglas de aplicación o sprint vacíos en release.")
+                    return ValidationResult.Invalid("release/: siglas o sprint vacíos.")
                 }
                 return ValidationResult.Ok
             }
@@ -59,9 +57,7 @@ object BranchNameValidator {
                 val parts = rest.split("_")
                 if (parts.size < 5) {
                     return ValidationResult.Invalid(
-                        "Formato BN: ${prefix}<siglas>_<sprint>_<area>_<empresa>_<refHU>. " +
-                                "Tras el prefijo se encontraron ${parts.size} segmentos (se esperan al menos 5 separados por '_'). " +
-                                "Referencia: $FORMAT_HINT",
+                        "Tras ${prefix} hacen falta 5 segmentos con '_' (hay ${parts.size}). $FORMAT_HINT",
                     )
                 }
                 val app = parts[0].trim()
@@ -70,11 +66,11 @@ object BranchNameValidator {
                 val empresa = parts[3].trim()
                 val hu = parts.drop(4).joinToString("_").trim()
                 if (listOf(app, sprint, area, empresa, hu).any { it.isEmpty() }) {
-                    return ValidationResult.Invalid("Ningún segmento de feature/hotfix puede estar vacío.")
+                    return ValidationResult.Invalid("Segmento vacío en feature/hotfix.")
                 }
                 if (empresa != BnDefaults.EMPRESA) {
                     return ValidationResult.Invalid(
-                        "El segmento empresa debe ser ${BnDefaults.EMPRESA} (convención BN). Recibido: $empresa",
+                        "Empresa debe ser ${BnDefaults.EMPRESA}; recibido: $empresa",
                     )
                 }
                 return ValidationResult.Ok
