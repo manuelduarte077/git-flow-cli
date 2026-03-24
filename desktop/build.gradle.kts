@@ -1,22 +1,36 @@
+import org.gradle.api.tasks.JavaExec
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization") version "2.3.10"
     id("org.jetbrains.compose") version "1.8.0"
     id("org.jetbrains.kotlin.plugin.compose") version "2.3.10"
 }
 
 dependencies {
+    implementation(platform("org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0"))
+    implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     implementation(project(":core"))
     implementation(compose.desktop.currentOs)
+    implementation(compose.components.resources)
     implementation(compose.material3)
     implementation(compose.materialIconsExtended)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.9.0")
+    implementation("com.mohamedrejeb.calf:calf-file-picker:0.10.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing")
 }
 
 kotlin {
     jvmToolchain(21)
+}
+
+compose {
+    resources {
+        publicResClass = true
+        packageOfResClass = "dev.donmanuel.desktop.generated"
+    }
 }
 
 compose.desktop {
@@ -29,5 +43,11 @@ compose.desktop {
             vendor = "donmanuel"
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
         }
+    }
+}
+
+if (Runtime.version().feature() >= 24) {
+    tasks.withType<JavaExec>().configureEach {
+        jvmArgs("--enable-native-access=ALL-UNNAMED")
     }
 }
