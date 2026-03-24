@@ -1,61 +1,14 @@
 plugins {
-    kotlin("jvm") version "2.3.10"
-    application
+    kotlin("jvm") version "2.3.10" apply false
+    id("org.jetbrains.compose") version "1.8.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.10" apply false
 }
 
-group = "dev.donmanuel"
-version = "2.0.2"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(kotlin("test"))
-
-    implementation("com.github.ajalt.clikt:clikt:4.2.0")
-    implementation("org.tomlj:tomlj:1.1.1")
-
-}
-
-kotlin {
-    jvmToolchain(21)
-}
-
-application {
-    mainClass.set("dev.donmanuel.cli.MainKt")
-    applicationName = "git-flow-cli"
-}
-
-distributions {
-    main {
-        distributionBaseName.set("git-flow-cli")
+allprojects {
+    group = "dev.donmanuel"
+    version = "2.0.2"
+    repositories {
+        google()
+        mavenCentral()
     }
-}
-
-tasks.withType<Jar>().configureEach {
-    manifest {
-        attributes(
-            "Implementation-Version" to project.version,
-            "Implementation-Title" to "git-flow-cli",
-        )
-    }
-}
-
-tasks.processResources {
-    filesMatching("**/git-flow-cli-version.properties") {
-        filter { line -> line.replace("@version@", project.version.toString()) }
-    }
-}
-
-tasks.named<Tar>("distTar") {
-    compression = Compression.GZIP
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-tasks.named<JavaExec>("run") {
-    standardInput = System.`in`
 }
