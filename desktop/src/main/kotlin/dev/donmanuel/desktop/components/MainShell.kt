@@ -27,7 +27,7 @@ import java.nio.file.Path
 fun MainShell(
     projectRoot: Path,
     bnConfig: BnConfig?,
-    tomlStatus: TomlUiStatus,
+    tomlStatus: TomlUiStatus?,
     onChangeProject: () -> Unit,
     onAboutClick: () -> Unit,
 ) {

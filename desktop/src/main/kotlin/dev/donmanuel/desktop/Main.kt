@@ -26,6 +26,7 @@ import dev.donmanuel.cli.config.ExampleTomlTemplate
 import dev.donmanuel.desktop.components.MainShell
 import dev.donmanuel.desktop.components.PendingTomlDialog
 import dev.donmanuel.desktop.components.ProjectSelectScreen
+import dev.donmanuel.desktop.components.TomlUiStatus
 import dev.donmanuel.desktop.components.tomlUiStatus
 import dev.donmanuel.desktop.generated.Res
 import dev.donmanuel.desktop.generated.ic_bn
@@ -301,11 +302,16 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
                 }
             }
 
+            var tomlStatus by remember(projectRoot) { mutableStateOf<TomlUiStatus?>(null) }
+            LaunchedEffect(projectRoot) {
+                tomlStatus = withContext(Dispatchers.IO) { tomlUiStatus(projectRoot) }
+            }
+
             if (loadError == null) {
                 MainShell(
                     projectRoot = projectRoot,
                     bnConfig = bnConfig,
-                    tomlStatus = tomlUiStatus(projectRoot),
+                    tomlStatus = tomlStatus,
                     onChangeProject = {
                         recentProjects = ProjectHistoryStore.load()
                         navigateToSelectionClearingStack()

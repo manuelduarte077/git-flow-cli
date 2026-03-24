@@ -31,7 +31,7 @@ import kotlin.io.path.absolutePathString
 fun CcPanel(
     projectRoot: Path,
     bnConfig: BnConfig?,
-    tomlStatus: TomlUiStatus,
+    tomlStatus: TomlUiStatus?,
     modifier: Modifier = Modifier,
 ) {
     val gs = remember(projectRoot) { GitService(repoRoot = projectRoot) }

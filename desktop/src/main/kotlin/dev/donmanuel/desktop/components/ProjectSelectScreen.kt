@@ -19,6 +19,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +31,8 @@ import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.desktop.theme.AppPrimaryButton
 import dev.donmanuel.desktop.theme.AppSpacing
 import dev.donmanuel.desktop.theme.AppTextButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.nio.file.Path
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +45,14 @@ fun ProjectSelectScreen(
     onOpenRecent: (Path) -> Unit,
     onRemoveFromHistory: (Path) -> Unit,
 ) {
+    var tomlStatusByRoot by remember { mutableStateOf<Map<Path, TomlUiStatus>>(emptyMap()) }
+    LaunchedEffect(recentProjects) {
+        val roots = recentProjects
+        tomlStatusByRoot = withContext(Dispatchers.IO) {
+            roots.associateWith { tomlUiStatus(it) }
+        }
+    }
+
     Column(
         Modifier.fillMaxSize().padding(AppSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
@@ -66,7 +81,7 @@ fun ProjectSelectScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             ) {
                 items(recentProjects, key = { it.toString() }) { root ->
-                    val status = tomlUiStatus(root)
+                    val status = tomlStatusByRoot[root]
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -86,6 +101,7 @@ fun ProjectSelectScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 when (status) {
+                                    null -> {}
                                     TomlUiStatus.Missing -> {
                                         AssistChip(
                                             onClick = {},
