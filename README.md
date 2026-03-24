@@ -6,7 +6,7 @@ El repositorio es multi-módulo Gradle: `**:core`** (validadores, Git, TOML), `*
 
 ## Requisitos
 
-- **Java 21+** en el `PATH`.
+- **Java 21** (JDK 21) en el `PATH` o vía toolchain de Gradle (Foojay).
 
 ### Comandos rápidos
 
@@ -190,6 +190,12 @@ Ventana con pestañas **Rama**, **Commit (cc)** y **Acerca de**; usa la misma l�
 ./gradlew :desktop:run
 ```
 
+En desarrollo, macOS suele mostrar el proceso como **java** en el Dock (icono genérico); para ver nombre e icono del producto usa `./gradlew :desktop:runDistributable` o el `.app` tras `packageDmg`.
+
+En macOS, la app fija por defecto **Skiko en modo SOFTWARE** (CPU) si no defines otra cosa, para evitar fallos JNI con **Metal** en algunos JDK (`UnsatisfiedLinkError`). Para forzar **Metal** (GPU): `SKIKO_RENDER_API=METAL` o `-Dskiko.renderApi=METAL`.
+
+Con **JDK 24+**, la JVM restringe `System.load` (Skiko carga librerías nativas). El `desktop/build.gradle.kts` añade `--enable-native-access=ALL-UNNAMED` a las tareas `JavaExec` cuando la versión del **launcher** es ≥ 24. El proyecto fija **Java 21** en el `build.gradle.kts` raíz (`jvmToolchain(21)`); alinea `JAVA_HOME` con esa toolchain si ves errores.
+
 Empaquetado nativo (según SO: DMG, MSI, DEB, etc.):
 
 ```bash
@@ -214,7 +220,7 @@ Distribución del CLI (ZIP/TGZ) del módulo `:cli`:
 
 ## Publicar releases (mantenedores)
 
-Workflow: `[.github/workflows/release.yml](.github/workflows/release.yml)` (se dispara con tag `v*`).
+Workflow: `[.github/workflows/release.yml](.github/workflows/release.yml)` (se dispara con tag `v*`). Construye el ZIP/TGZ del CLI, el DMG de macOS (`:desktop:packageDmg`) y el MSI de Windows (`:desktop:packageMsi`) y adjunta todo al mismo GitHub Release.
 
 1. Ajusta `version` en el `build.gradle.kts` raíz (`allprojects { version = ... }`) si aplica.
 2. `git tag v2.0.2 && git push origin v2.0.2`
