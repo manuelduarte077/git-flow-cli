@@ -47,7 +47,6 @@ object ProjectHistoryStore {
                 StandardCharsets.UTF_8,
             )
         } catch (_: Exception) {
-            // ignorar fallos de escritura
         }
     }
 

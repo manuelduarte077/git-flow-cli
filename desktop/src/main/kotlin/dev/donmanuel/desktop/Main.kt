@@ -45,11 +45,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isRegularFile
 
-/**
- * En algunos JDK/macOS, el backend Metal de Skiko falla al enlazar JNI (`UnsatisfiedLinkError` en
- * `getAdapterMaxTextureSize`). Por defecto usamos render por CPU en macOS salvo override explícito.
- * Para intentar Metal: `SKIKO_RENDER_API=METAL` o `-Dskiko.renderApi=METAL`.
- */
+/** Skiko en macOS: SOFTWARE por defecto si Metal (JNI) falla; METAL vía env o `-Dskiko.renderApi=`. */
 private fun applyDefaultSkikoRenderApiOnMacOs() {
     val os = System.getProperty("os.name")?.lowercase() ?: return
     if (!os.contains("mac")) return
@@ -283,7 +279,6 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
             var bnConfig by remember(route.root) { mutableStateOf<BnConfig?>(null) }
             var loadError by remember(route.root) { mutableStateOf<String?>(null) }
 
-            // Una lectura desde disco por entrada a la pantalla (Navigation evita pasar BnConfig en la ruta).
             LaunchedEffect(route.root) {
                 loadError = null
                 val cfgPath = projectRoot.resolve(BnConfig.FILE_NAME)

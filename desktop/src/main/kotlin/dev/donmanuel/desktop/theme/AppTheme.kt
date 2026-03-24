@@ -10,7 +10,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Espaciado del design system (dp). */
 object AppSpacing {
     val xs = 4.dp
     val sm = 8.dp
