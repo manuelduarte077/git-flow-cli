@@ -1,5 +1,8 @@
 package dev.donmanuel.desktop.components
 
+import androidx.compose.foundation.ContextMenuDataProvider
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +29,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.desktop.theme.AppPrimaryButton
@@ -35,7 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.file.Path
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectSelectScreen(
     errorMessage: String?,
@@ -45,6 +52,7 @@ fun ProjectSelectScreen(
     onOpenRecent: (Path) -> Unit,
     onRemoveFromHistory: (Path) -> Unit,
 ) {
+    val clipboard = LocalClipboardManager.current
     var tomlStatusByRoot by remember { mutableStateOf<Map<Path, TomlUiStatus>>(emptyMap()) }
     LaunchedEffect(recentProjects) {
         val roots = recentProjects
@@ -82,48 +90,62 @@ fun ProjectSelectScreen(
             ) {
                 items(recentProjects, key = { it.toString() }) { root ->
                     val status = tomlStatusByRoot[root]
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenRecent(root) },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    val pathText = root.toAbsolutePath().toString()
+                    ContextMenuDataProvider(
+                        items = {
+                            listOf(
+                                ContextMenuItem("Abrir") { onOpenRecent(root) },
+                                ContextMenuItem("Copiar ruta") {
+                                    clipboard.setText(AnnotatedString(pathText))
+                                },
+                                ContextMenuItem("Quitar del historial") { onRemoveFromHistory(root) },
+                            )
+                        },
                     ) {
-                        Row(
-                            Modifier.padding(AppSpacing.md).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { onOpenRecent(root) },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    root.toAbsolutePath().toString(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                when (status) {
-                                    null -> {}
-                                    TomlUiStatus.Missing -> {
-                                        AssistChip(
-                                            onClick = {},
-                                            label = { Text("Sin ${BnConfig.FILE_NAME}", style = MaterialTheme.typography.labelLarge) },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.error,
-                                            ),
-                                        )
-                                    }
-                                    TomlUiStatus.SameAsExample -> {}
-                                    TomlUiStatus.Custom -> {
-                                        AssistChip(
-                                            onClick = {},
-                                            label = { Text("TOML personalizado", style = MaterialTheme.typography.labelLarge) },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                labelColor = MaterialTheme.colorScheme.tertiary,
-                                            ),
-                                        )
+                            Row(
+                                Modifier.padding(AppSpacing.md).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        pathText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    when (status) {
+                                        null -> {}
+                                        TomlUiStatus.Missing -> {
+                                            AssistChip(
+                                                onClick = {},
+                                                label = { Text("Sin ${BnConfig.FILE_NAME}", style = MaterialTheme.typography.labelLarge) },
+                                                colors = AssistChipDefaults.assistChipColors(
+                                                    labelColor = MaterialTheme.colorScheme.error,
+                                                ),
+                                            )
+                                        }
+                                        TomlUiStatus.SameAsExample -> {}
+                                        TomlUiStatus.Custom -> {
+                                            AssistChip(
+                                                onClick = {},
+                                                label = { Text("TOML personalizado", style = MaterialTheme.typography.labelLarge) },
+                                                colors = AssistChipDefaults.assistChipColors(
+                                                    labelColor = MaterialTheme.colorScheme.tertiary,
+                                                ),
+                                            )
+                                        }
                                     }
                                 }
+                                AppTextButton(text = "Quitar", onClick = { onRemoveFromHistory(root) })
                             }
-                            AppTextButton(text = "Quitar", onClick = { onRemoveFromHistory(root) })
                         }
                     }
                 }

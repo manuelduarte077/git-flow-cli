@@ -9,8 +9,11 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
+import java.awt.Dimension
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -59,7 +62,7 @@ private fun applyDefaultSkikoRenderApiOnMacOs() {
 fun main() {
     applyDefaultSkikoRenderApiOnMacOs()
     application {
-        val windowState = rememberWindowState(width = 1024.dp, height = 760.dp)
+        val windowState = rememberWindowState(width = Dp.Unspecified, height = Dp.Unspecified)
         val windowIcon = painterResource(Res.drawable.ic_bn)
         val menuCallbacks = remember { DesktopMenuCallbacks() }
         Window(
@@ -68,6 +71,12 @@ fun main() {
             title = "Git BN Flow",
             icon = windowIcon,
         ) {
+            val density = LocalDensity.current
+            SideEffect {
+                with(density) {
+                    window.minimumSize = Dimension(900.dp.roundToPx(), 600.dp.roundToPx())
+                }
+            }
             MenuBar {
                 Menu("Archivo", mnemonic = 'A') {
                     Item(
