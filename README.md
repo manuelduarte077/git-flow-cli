@@ -184,7 +184,20 @@ Descarga `.zip` o `.tgz` desde [Releases](https://github.com/manuelduarte077/git
 
 ## App de escritorio (Compose, opcional)
 
-Ventana con pestañas **Rama**, **Commit (cc)** y **Acerca de**; usa la misma lógica que el CLI (`:core`). No sustituye al binario en PATH para hooks.
+Ventana con herramientas **Rama**, **Commit (cc)**, ajustes y **Acerca de**; usa la misma lógica que el CLI (`:core`). No sustituye al binario en PATH para hooks.
+
+Preferencias y tema se guardan bajo `~/.git-flow-cli-desktop/` (`preferences.properties`, historial de proyectos).
+
+Atajos (con la ventana enfocada, macOS):
+
+| Atajo | Acción |
+| ----- | ------ |
+| ⌘O | Abrir proyecto |
+| ⌘, | Ajustes (valores por defecto canal / subcanal / empresa) |
+| ⌘1 | Ir a Rama (vista proyecto abierto) |
+| ⌘2 | Ir a Commit |
+| ⌘I | Acerca de |
+| ⌘Q | Salir |
 
 ```bash
 ./gradlew :desktop:run
