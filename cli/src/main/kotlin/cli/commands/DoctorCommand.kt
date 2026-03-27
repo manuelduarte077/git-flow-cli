@@ -54,7 +54,7 @@ class DoctorCommand : CliktCommand(
             return
         }
 
-        ok.add("Raíz del repo: ${root.toAbsolutePath().normalize()}")
+        ok.add("Raíz del repo (absoluta): ${root.toAbsolutePath().normalize()}")
 
         val cfgPath = ConfigFinder.findConfigFile()
         if (cfgPath != null) {
@@ -64,21 +64,41 @@ class DoctorCommand : CliktCommand(
         }
 
         val hooksDir = GitRepo.resolveHooksDirectory(root)
+        ok.add("Directorio de hooks Git (absoluto): ${hooksDir.toAbsolutePath().normalize()}")
+
         val commitMsg = hooksDir.resolve("commit-msg")
         if (commitMsg.isRegularFile()) {
             val text = commitMsg.readText()
             if (text.contains(GitRepo.HOOK_MANAGED_MARKER)) {
-                ok.add("Hook commit-msg: instalado por git-flow-cli (${commitMsg.absolutePathString()})")
+                ok.add("Hook commit-msg: instalado por git-flow-cli (${commitMsg.toAbsolutePath().normalize()})")
             } else {
-                warn.add("commit-msg existe pero no está gestionado por git-flow-cli (${commitMsg.absolutePathString()}).")
+                warn.add(
+                    "commit-msg existe pero no está gestionado por git-flow-cli " +
+                        "(${commitMsg.toAbsolutePath().normalize()}).",
+                )
             }
         } else {
-            warn.add("commit-msg: no instalado (usa `git-flow-cli hooks install`).")
+            warn.add(
+                "commit-msg: no instalado. Ruta esperada: ${commitMsg.toAbsolutePath().normalize()} " +
+                    "(ej. `git-flow-cli hooks install`).",
+            )
         }
 
         val postCheckout = hooksDir.resolve("post-checkout")
         if (postCheckout.isRegularFile() && postCheckout.readText().contains(GitRepo.HOOK_POST_CHECKOUT_MARKER)) {
-            ok.add("Hook post-checkout (rama BN): instalado")
+            ok.add("Hook post-checkout (rama BN): instalado (${postCheckout.toAbsolutePath().normalize()})")
+        } else {
+            warn.add(
+                "post-checkout (rama BN): no instalado. Ruta esperada: ${postCheckout.toAbsolutePath().normalize()} " +
+                    "(`git-flow-cli hooks install --branch-hook`).",
+            )
+        }
+
+        val desktopBundle = System.getenv("GIT_BN_FLOW_DESKTOP_BUNDLE")
+        if (desktopBundle.isNullOrBlank()) {
+            ok.add("Desktop empaquetado: N/A (opcional; defina GIT_BN_FLOW_DESKTOP_BUNDLE si aplica).")
+        } else {
+            ok.add("Desktop empaquetado: $desktopBundle")
         }
 
         printSections(ok, warn, fail)
