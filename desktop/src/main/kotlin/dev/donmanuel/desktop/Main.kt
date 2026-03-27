@@ -1,5 +1,6 @@
 package dev.donmanuel.desktop
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -8,12 +9,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.*
-import java.awt.Dimension
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.MenuBar
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,16 +35,21 @@ import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.config.ExampleTomlTemplate
 import dev.donmanuel.desktop.components.MainShell
+import dev.donmanuel.desktop.components.MainTool
 import dev.donmanuel.desktop.components.PendingTomlDialog
 import dev.donmanuel.desktop.components.ProjectSelectScreen
 import dev.donmanuel.desktop.components.TomlUiStatus
 import dev.donmanuel.desktop.components.tomlUiStatus
+import dev.donmanuel.desktop.desktopTheme.ThemeMode
 import dev.donmanuel.desktop.generated.Res
 import dev.donmanuel.desktop.generated.ic_bn
+import dev.donmanuel.desktop.logging.DesktopLog
 import dev.donmanuel.desktop.navigation.RouteMain
 import dev.donmanuel.desktop.navigation.RoutePendingToml
 import dev.donmanuel.desktop.navigation.RouteSelection
 import dev.donmanuel.desktop.screens.AboutContent
+import dev.donmanuel.desktop.screens.SettingsDialogContent
+import dev.donmanuel.desktop.storage.DesktopPreferencesStore
 import dev.donmanuel.desktop.storage.ProjectHistoryStore
 import dev.donmanuel.desktop.theme.AppSpacing
 import dev.donmanuel.desktop.theme.AppTextButton
@@ -45,11 +58,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.painterResource
+import java.awt.Dimension
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isRegularFile
 
-/** Skiko en macOS: SOFTWARE por defecto si Metal (JNI) falla; METAL vía env o `-Dskiko.renderApi=`. */
 private fun applyDefaultSkikoRenderApiOnMacOs() {
     val os = System.getProperty("os.name")?.lowercase() ?: return
     if (!os.contains("mac")) return
@@ -58,18 +71,73 @@ private fun applyDefaultSkikoRenderApiOnMacOs() {
     System.setProperty("skiko.renderApi", "SOFTWARE")
 }
 
+private fun resolveDark(themeMode: ThemeMode, systemDark: Boolean): Boolean =
+    when (themeMode) {
+        ThemeMode.SYSTEM -> systemDark
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     applyDefaultSkikoRenderApiOnMacOs()
     application {
         val windowState = rememberWindowState(width = Dp.Unspecified, height = Dp.Unspecified)
         val windowIcon = painterResource(Res.drawable.ic_bn)
-        val menuCallbacks = remember { DesktopMenuCallbacks() }
+        var themeMode by remember { mutableStateOf(DesktopPreferencesStore.loadTheme()) }
+        var ccPrefs by remember { mutableStateOf(DesktopPreferencesStore.loadCcPrefs()) }
+        val menuBindingsState = remember { mutableStateOf(AppMenuBindings()) }
+        val systemDark = isSystemInDarkTheme()
+        val darkTheme = resolveDark(themeMode, systemDark)
+
+        fun applyTheme(mode: ThemeMode) {
+            themeMode = mode
+            DesktopPreferencesStore.saveTheme(mode)
+        }
+
         Window(
             onCloseRequest = ::exitApplication,
             state = windowState,
             title = "Git BN Flow",
             icon = windowIcon,
+            onKeyEvent = { event ->
+                if (event.type != KeyEventType.KeyDown) return@Window false
+                if (!event.isMetaPressed) return@Window false
+                val b = menuBindingsState.value
+                when (event.key) {
+                    Key.O -> {
+                        b.openProject()
+                        true
+                    }
+                    Key.Comma -> {
+                        b.showSettings()
+                        true
+                    }
+                    Key.One -> {
+                        val fn = b.selectRama
+                        if (fn != null) {
+                            fn()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Key.Two -> {
+                        val fn = b.selectCc
+                        if (fn != null) {
+                            fn()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Key.I -> {
+                        b.showAbout()
+                        true
+                    }
+                    else -> false
+                }
+            },
         ) {
             val density = LocalDensity.current
             SideEffect {
@@ -81,8 +149,13 @@ fun main() {
                 Menu("Archivo", mnemonic = 'A') {
                     Item(
                         "Abrir proyecto…",
-                        onClick = { menuCallbacks.openProject() },
+                        onClick = { menuBindingsState.value.openProject() },
                         shortcut = KeyShortcut(Key.O, meta = true),
+                    )
+                    Item(
+                        "Ajustes…",
+                        onClick = { menuBindingsState.value.showSettings() },
+                        shortcut = KeyShortcut(Key.Comma, meta = true),
                     )
                     Separator()
                     Item(
@@ -91,15 +164,36 @@ fun main() {
                         shortcut = KeyShortcut(Key.Q, meta = true),
                     )
                 }
+                Menu("Vista", mnemonic = 'V') {
+                    Item(
+                        "Tema: usar sistema",
+                        onClick = { menuBindingsState.value.setTheme(ThemeMode.SYSTEM) },
+                    )
+                    Item(
+                        "Tema: claro",
+                        onClick = { menuBindingsState.value.setTheme(ThemeMode.LIGHT) },
+                    )
+                    Item(
+                        "Tema: oscuro",
+                        onClick = { menuBindingsState.value.setTheme(ThemeMode.DARK) },
+                    )
+                }
                 Menu("Ayuda", mnemonic = 'Y') {
                     Item(
                         "Acerca de Git BN Flow",
-                        onClick = { menuCallbacks.showAbout() },
+                        onClick = { menuBindingsState.value.showAbout() },
+                        shortcut = KeyShortcut(Key.I, meta = true),
                     )
                 }
             }
-            AppTheme {
-                DesktopApp(menuCallbacks = menuCallbacks)
+            AppTheme(darkTheme = darkTheme) {
+                DesktopApp(
+                    menuBindingsState = menuBindingsState,
+                    ccPrefs = ccPrefs,
+                    onCcPrefsChange = { ccPrefs = it },
+                    themeMode = themeMode,
+                    onThemeSelected = ::applyTheme,
+                )
             }
         }
     }
@@ -107,14 +201,22 @@ fun main() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
+fun DesktopApp(
+    menuBindingsState: MutableState<AppMenuBindings>,
+    ccPrefs: DesktopPreferencesStore.CcPrefs,
+    onCcPrefsChange: (DesktopPreferencesStore.CcPrefs) -> Unit,
+    themeMode: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit,
+) {
     val navController = rememberNavController()
     var selectionError by remember { mutableStateOf<String?>(null) }
     var recentProjects by remember { mutableStateOf(ProjectHistoryStore.load()) }
     var aboutOpen by remember { mutableStateOf(false) }
+    var settingsOpen by remember { mutableStateOf(false) }
     var pendingFolderPicker by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val backStackEntry by navController.currentBackStackEntryAsState()
+    var mainToolByRoot by remember { mutableStateOf(mapOf<String, MainTool?>()) }
 
     fun navigateToSelectionClearingStack() {
         navController.navigate(RouteSelection) {
@@ -169,23 +271,52 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
         }
     }
 
-    DisposableEffect(navController, backStackEntry?.destination?.route) {
-        menuCallbacks.openProject = {
-            val dest = navController.currentBackStackEntry?.destination
-            when {
-                dest?.hasRoute(RouteMain::class) == true -> {
-                    navigateToSelectionClearingStack()
-                    pendingFolderPicker = true
-                }
-                dest?.hasRoute(RoutePendingToml::class) == true -> {
-                    navigateToSelectionClearingStack()
-                    pendingFolderPicker = true
-                }
-                else -> folderPicker.launch()
+    fun openProjectAction() {
+        val dest = navController.currentBackStackEntry?.destination
+        when {
+            dest?.hasRoute(RouteMain::class) == true -> {
+                navigateToSelectionClearingStack()
+                pendingFolderPicker = true
             }
+            dest?.hasRoute(RoutePendingToml::class) == true -> {
+                navigateToSelectionClearingStack()
+                pendingFolderPicker = true
+            }
+            else -> folderPicker.launch()
         }
-        menuCallbacks.showAbout = { aboutOpen = true }
-        onDispose { }
+    }
+
+    val routeMainKey =
+        if (backStackEntry?.destination?.hasRoute(RouteMain::class) == true) {
+            backStackEntry?.toRoute<RouteMain>()?.root
+        } else {
+            null
+        }
+    val currentMainTool = routeMainKey?.let { mainToolByRoot[it] }
+
+    LaunchedEffect(
+        backStackEntry?.destination?.route,
+        routeMainKey,
+        currentMainTool,
+        themeMode,
+        onThemeSelected,
+    ) {
+        val selectRama: (() -> Unit)? =
+            routeMainKey?.let { key ->
+                { mainToolByRoot = mainToolByRoot + (key to MainTool.Rama) }
+            }
+        val selectCc: (() -> Unit)? =
+            routeMainKey?.let { key ->
+                { mainToolByRoot = mainToolByRoot + (key to MainTool.Cc) }
+            }
+        menuBindingsState.value = AppMenuBindings(
+            openProject = { openProjectAction() },
+            showAbout = { aboutOpen = true },
+            showSettings = { settingsOpen = true },
+            selectRama = selectRama,
+            selectCc = selectCc,
+            setTheme = onThemeSelected,
+        )
     }
 
     LaunchedEffect(backStackEntry?.destination?.route, pendingFolderPicker) {
@@ -214,6 +345,24 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
         }
     }
 
+    if (settingsOpen) {
+        Dialog(onDismissRequest = { settingsOpen = false }) {
+            Card(
+                modifier = Modifier.widthIn(max = 560.dp).wrapContentHeight(),
+                shape = MaterialTheme.shapes.large,
+            ) {
+                SettingsDialogContent(
+                    initialPrefs = ccPrefs,
+                    onDismiss = { settingsOpen = false },
+                    onSave = { prefs ->
+                        DesktopPreferencesStore.saveCcPrefs(prefs)
+                        onCcPrefsChange(prefs)
+                    },
+                )
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = RouteSelection,
@@ -226,6 +375,9 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
                 onChooseFolder = {
                     selectionError = null
                     folderPicker.launch()
+                },
+                onRefreshRecent = {
+                    recentProjects = ProjectHistoryStore.refresh()
                 },
                 onOpenRecent = { root ->
                     selectionError = null
@@ -272,6 +424,7 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
                                 }
                             }
                         } catch (e: Exception) {
+                            DesktopLog.error("PendingToml create failed", e)
                             withContext(Dispatchers.Main) {
                                 selectionError = e.message ?: e.javaClass.simpleName
                                 navigateToSelectionClearingStack()
@@ -298,6 +451,7 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
                     try {
                         withContext(Dispatchers.IO) { BnConfig.load(cfgPath) }
                     } catch (e: Exception) {
+                        DesktopLog.error("Failed to load ${BnConfig.FILE_NAME}", e)
                         loadError = e.message ?: e.javaClass.simpleName
                         null
                     }
@@ -316,11 +470,21 @@ fun DesktopApp(menuCallbacks: DesktopMenuCallbacks) {
                 tomlStatus = withContext(Dispatchers.IO) { tomlUiStatus(projectRoot) }
             }
 
+            val toolForRoute = mainToolByRoot[route.root]
+
             if (loadError == null) {
                 MainShell(
                     projectRoot = projectRoot,
                     bnConfig = bnConfig,
                     tomlStatus = tomlStatus,
+                    ccPrefs = ccPrefs,
+                    mainTool = toolForRoute,
+                    onMainToolChange = { t ->
+                        mainToolByRoot = mainToolByRoot + (route.root to t)
+                    },
+                    themeMode = themeMode,
+                    onThemeModeChange = onThemeSelected,
+                    onOpenSettings = { settingsOpen = true },
                     onChangeProject = {
                         recentProjects = ProjectHistoryStore.load()
                         navigateToSelectionClearingStack()

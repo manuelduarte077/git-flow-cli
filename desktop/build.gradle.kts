@@ -19,6 +19,8 @@ dependencies {
     implementation("com.mohamedrejeb.calf:calf-file-picker:0.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing")
+    implementation("org.slf4j:slf4j-api:2.0.16")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.16")
 }
 
 compose {

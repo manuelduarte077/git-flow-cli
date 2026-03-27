@@ -1,5 +1,6 @@
 package dev.donmanuel.desktop.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,10 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import dev.donmanuel.cli.config.BnConfig
-import dev.donmanuel.cli.config.BnDefaults
+import dev.donmanuel.cli.config.CcDisplayDefaultsResolver
 import dev.donmanuel.cli.config.ConfigFinder
 import dev.donmanuel.cli.core.CommitMessageValidator
 import dev.donmanuel.cli.core.GitService
+import dev.donmanuel.desktop.logging.DesktopLog
+import dev.donmanuel.desktop.storage.DesktopPreferencesStore
 import dev.donmanuel.desktop.theme.AppOutlinedTextField
 import dev.donmanuel.desktop.theme.AppPrimaryButton
 import dev.donmanuel.desktop.theme.AppSecondaryButton
@@ -27,11 +30,13 @@ import java.nio.file.Path
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.path.absolutePathString
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CcPanel(
     projectRoot: Path,
     bnConfig: BnConfig?,
     tomlStatus: TomlUiStatus?,
+    ccPrefs: DesktopPreferencesStore.CcPrefs,
     modifier: Modifier = Modifier,
 ) {
     val gs = remember(projectRoot) { GitService(repoRoot = projectRoot) }
@@ -39,36 +44,35 @@ fun CcPanel(
     var ticket by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var subcanal by remember { mutableStateOf("") }
-    var canal by remember { mutableStateOf(BnDefaults.CANAL_COMMIT) }
-    var empresa by remember { mutableStateOf(BnDefaults.EMPRESA) }
+    var canal by remember { mutableStateOf("") }
+    var empresa by remember { mutableStateOf("") }
     var preview by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(projectRoot, bnConfig) {
-        if (bnConfig != null) {
-            canal = bnConfig.canal
-            empresa = bnConfig.empresa
-            subcanal = bnConfig.subcanal
-        } else {
-            val found = ConfigFinder.findConfigFile(projectRoot)
-            if (found != null) {
+    LaunchedEffect(projectRoot, bnConfig, ccPrefs) {
+        val toml = bnConfig ?: run {
+            val path = ConfigFinder.findConfigFile(projectRoot)
+            if (path != null) {
                 try {
-                    val cfg = BnConfig.load(found)
-                    canal = cfg.canal
-                    empresa = cfg.empresa
-                    subcanal = cfg.subcanal
-                } catch (_: Exception) {
-                    canal = BnDefaults.CANAL_COMMIT
-                    empresa = BnDefaults.EMPRESA
-                    subcanal = ""
+                    BnConfig.load(path)
+                } catch (e: Exception) {
+                    DesktopLog.warn("TOML opcional no válido en $path", e)
+                    null
                 }
             } else {
-                canal = BnDefaults.CANAL_COMMIT
-                empresa = BnDefaults.EMPRESA
-                subcanal = ""
+                null
             }
         }
+        val f = CcDisplayDefaultsResolver.resolve(
+            toml,
+            ccPrefs.canal,
+            ccPrefs.subcanal,
+            ccPrefs.empresa,
+        )
+        canal = f.canal
+        subcanal = f.subcanal
+        empresa = f.empresa
     }
 
     Column(
@@ -77,11 +81,7 @@ fun CcPanel(
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
     ) {
         Text("Commit (cc)", style = MaterialTheme.typography.titleLarge)
-        Text(
-            projectRoot.absolutePathString(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        ProjectPathWithContextMenu(pathText = projectRoot.absolutePathString())
         if (tomlStatus == TomlUiStatus.Missing) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
@@ -181,6 +181,7 @@ fun CcPanel(
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {
+                            DesktopLog.error("Commit failed", e)
                             error = e.message ?: e.javaClass.simpleName
                         }
                     }

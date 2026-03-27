@@ -35,6 +35,42 @@ object ProjectHistoryStore {
         }
     }
 
+    /**
+     * Relee el archivo, elimina entradas que ya no son repos Git válidos y reescribe el archivo.
+     */
+    fun refresh(): List<Path> {
+        val f = storeFile
+        if (f.notExists()) return emptyList()
+        val rawLines = try {
+            Files.readAllLines(f, StandardCharsets.UTF_8)
+        } catch (_: Exception) {
+            return emptyList()
+        }
+        val valid = rawLines
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { Path.of(it).toAbsolutePath().normalize() }
+            .distinct()
+            .filter { Files.isDirectory(it.resolve(".git")) }
+            .take(MAX)
+            .toList()
+        try {
+            if (valid.isEmpty()) {
+                Files.deleteIfExists(storeFile)
+            } else {
+                storeFile.parent.createDirectories()
+                Files.writeString(
+                    storeFile,
+                    valid.joinToString("\n") { it.toAbsolutePath().normalize().toString() } + "\n",
+                    StandardCharsets.UTF_8,
+                )
+            }
+        } catch (_: Exception) {
+        }
+        return valid
+    }
+
     fun add(root: Path) {
         val normalized = root.toAbsolutePath().normalize()
         val merged = listOf(normalized) + load().filter { it != normalized }

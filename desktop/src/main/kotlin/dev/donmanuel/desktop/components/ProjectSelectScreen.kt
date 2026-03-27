@@ -26,20 +26,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.style.TextOverflow
 import dev.donmanuel.cli.config.BnConfig
 import dev.donmanuel.desktop.theme.AppPrimaryButton
 import dev.donmanuel.desktop.theme.AppSpacing
 import dev.donmanuel.desktop.theme.AppTextButton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.awt.datatransfer.StringSelection
 import java.nio.file.Path
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -49,10 +52,12 @@ fun ProjectSelectScreen(
     onDismissError: () -> Unit,
     recentProjects: List<Path>,
     onChooseFolder: () -> Unit,
+    onRefreshRecent: () -> Unit,
     onOpenRecent: (Path) -> Unit,
     onRemoveFromHistory: (Path) -> Unit,
 ) {
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val clipboardScope = rememberCoroutineScope()
     var tomlStatusByRoot by remember { mutableStateOf<Map<Path, TomlUiStatus>>(emptyMap()) }
     LaunchedEffect(recentProjects) {
         val roots = recentProjects
@@ -76,7 +81,14 @@ fun ProjectSelectScreen(
             onClick = onChooseFolder,
             leadingIcon = Icons.Default.FolderOpen,
         )
-        Text("Proyectos recientes", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Proyectos recientes", style = MaterialTheme.typography.titleMedium)
+            AppTextButton(text = "Actualizar lista", onClick = onRefreshRecent)
+        }
         if (recentProjects.isEmpty()) {
             Text(
                 "Aún no hay historial. Abre un repo y quedará guardado aquí.",
@@ -96,7 +108,9 @@ fun ProjectSelectScreen(
                             listOf(
                                 ContextMenuItem("Abrir") { onOpenRecent(root) },
                                 ContextMenuItem("Copiar ruta") {
-                                    clipboard.setText(AnnotatedString(pathText))
+                                    clipboardScope.launch {
+                                        clipboard.setClipEntry(ClipEntry(StringSelection(pathText)))
+                                    }
                                 },
                                 ContextMenuItem("Quitar del historial") { onRemoveFromHistory(root) },
                             )

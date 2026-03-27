@@ -1,5 +1,6 @@
 package dev.donmanuel.desktop.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import dev.donmanuel.cli.config.BnDefaults
 import dev.donmanuel.cli.core.BranchNameBuilder
 import dev.donmanuel.cli.core.GitService
+import dev.donmanuel.desktop.logging.DesktopLog
 import dev.donmanuel.desktop.theme.AppOutlinedTextField
 import dev.donmanuel.desktop.theme.AppPrimaryButton
 import dev.donmanuel.desktop.theme.AppSpacing
@@ -29,6 +31,7 @@ import java.nio.file.Path
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.io.path.absolutePathString
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RamaPanel(
     projectRoot: Path,
@@ -50,11 +53,7 @@ fun RamaPanel(
         verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
     ) {
         Text("Nueva rama", style = MaterialTheme.typography.titleLarge)
-        Text(
-            projectRoot.absolutePathString(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        ProjectPathWithContextMenu(pathText = projectRoot.absolutePathString())
         AppOutlinedTextField(
             value = tipo,
             onValueChange = { tipo = it },
@@ -133,6 +132,7 @@ fun RamaPanel(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
+                        DesktopLog.error("Rama create failed", e)
                         error = e.message ?: e.javaClass.simpleName
                     }
                 }

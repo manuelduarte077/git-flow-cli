@@ -4,9 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,8 +17,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.donmanuel.cli.config.BnConfig
+import dev.donmanuel.desktop.desktopTheme.ThemeMode
 import dev.donmanuel.desktop.generated.Res
 import dev.donmanuel.desktop.generated.ic_bn
+import dev.donmanuel.desktop.storage.DesktopPreferencesStore
+import dev.donmanuel.desktop.theme.AppPrimaryButton
+import dev.donmanuel.desktop.theme.AppSecondaryButton
 import dev.donmanuel.desktop.theme.AppSpacing
 import dev.donmanuel.desktop.theme.AppTextButton
 import org.jetbrains.compose.resources.painterResource
@@ -28,10 +34,15 @@ fun MainShell(
     projectRoot: Path,
     bnConfig: BnConfig?,
     tomlStatus: TomlUiStatus?,
+    ccPrefs: DesktopPreferencesStore.CcPrefs,
+    mainTool: MainTool?,
+    onMainToolChange: (MainTool?) -> Unit,
+    themeMode: ThemeMode,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onOpenSettings: () -> Unit,
     onChangeProject: () -> Unit,
     onAboutClick: () -> Unit,
 ) {
-    var currentTool by remember { mutableStateOf<MainTool?>(null) }
     val titlePath = remember(projectRoot) {
         projectRoot.toAbsolutePath().toString().let { s ->
             if (s.length > 52) "…" + s.takeLast(48) else s
@@ -69,15 +80,15 @@ fun MainShell(
             NavigationRailItem(
                 icon = { Icon(Icons.Default.AccountTree, contentDescription = "Rama") },
                 label = { Text("Rama", style = MaterialTheme.typography.labelLarge) },
-                selected = currentTool == MainTool.Rama,
-                onClick = { currentTool = MainTool.Rama },
+                selected = mainTool == MainTool.Rama,
+                onClick = { onMainToolChange(MainTool.Rama) },
                 colors = railItemColors,
             )
             NavigationRailItem(
                 icon = { Icon(Icons.Default.EditNote, contentDescription = "Commit") },
                 label = { Text("Commit", style = MaterialTheme.typography.labelLarge) },
-                selected = currentTool == MainTool.Cc,
-                onClick = { currentTool = MainTool.Cc },
+                selected = mainTool == MainTool.Cc,
+                onClick = { onMainToolChange(MainTool.Cc) },
                 colors = railItemColors,
             )
             Spacer(Modifier.weight(1f))
@@ -115,6 +126,21 @@ fun MainShell(
                                 colors = AssistChipDefaults.assistChipColors(labelColor = MaterialTheme.colorScheme.error),
                             )
                         }
+                        IconButton(
+                            onClick = {
+                                val next = when (themeMode) {
+                                    ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                                    ThemeMode.LIGHT -> ThemeMode.DARK
+                                    ThemeMode.DARK -> ThemeMode.SYSTEM
+                                }
+                                onThemeModeChange(next)
+                            },
+                        ) {
+                            Icon(Icons.Default.DarkMode, contentDescription = "Cambiar tema (sistema / claro / oscuro)")
+                        }
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(Icons.Default.Settings, contentDescription = "Ajustes")
+                        }
                         AppTextButton(text = "Cambiar proyecto", onClick = onChangeProject)
                         IconButton(onClick = onAboutClick) {
                             Icon(Icons.Default.Info, contentDescription = "Acerca de")
@@ -129,18 +155,34 @@ fun MainShell(
             Box(
                 Modifier.fillMaxSize().padding(padding).padding(AppSpacing.md),
             ) {
-                when (currentTool) {
+                when (mainTool) {
                     null -> {
                         Column(
                             modifier = Modifier.align(Alignment.Center),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(AppSpacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(AppSpacing.md),
                         ) {
                             Text(
-                                "Elige Rama o Commit en la barra lateral.",
+                                "Elige una herramienta para este repositorio.",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            Text(
+                                "Atajos: ⌘1 Rama · ⌘2 Commit · ⌘, Ajustes",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)) {
+                                AppPrimaryButton(
+                                    text = "Rama",
+                                    onClick = { onMainToolChange(MainTool.Rama) },
+                                    leadingIcon = Icons.Default.AccountTree,
+                                )
+                                AppSecondaryButton(
+                                    text = "Commit",
+                                    onClick = { onMainToolChange(MainTool.Cc) },
+                                )
+                            }
                         }
                     }
 
@@ -156,6 +198,7 @@ fun MainShell(
                             projectRoot = projectRoot,
                             bnConfig = bnConfig,
                             tomlStatus = tomlStatus,
+                            ccPrefs = ccPrefs,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
